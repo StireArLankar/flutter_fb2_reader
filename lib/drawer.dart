@@ -20,11 +20,16 @@ class AppDrawer extends StatelessWidget {
             SizedBox(height: 5),
             Text(
               'Menu!',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             Divider(),
             Expanded(
-              child: Container(),
+              child: SingleChildScrollView(
+                child: Column(children: [
+                  buildLink(context, 'file-picker', 'file-picker'),
+                  buildLink(context, 'path-provider', 'path-provider'),
+                ]),
+              ),
             ),
           ],
         ),

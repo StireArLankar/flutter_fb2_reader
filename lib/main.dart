@@ -14,7 +14,7 @@ class App extends StatelessWidget {
         primarySwatch: Colors.blue,
         accentColor: Colors.red,
       ),
-      initialRoute: '/',
+      initialRoute: 'file-picker',
       onGenerateRoute: generateRoutes,
     );
   }

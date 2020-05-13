@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_fb2_reader/path_provider.dart';
 
 import 'drawer.dart';
 import 'file_reader/file_reader.dart';
 
 Route<dynamic> generateRoutes(RouteSettings settings) {
   switch (settings.name) {
-    case '/':
+    case 'file-picker':
       return MaterialPageRoute(builder: (_) => FileReaderScreen());
+    case 'path-provider':
+      return MaterialPageRoute(builder: (_) => PathProviderScreen());
     default:
       return MaterialPageRoute(builder: (_) => DefaultScreen(settings.name));
   }
