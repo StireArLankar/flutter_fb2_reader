@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'fb2_reader.dart';
+
 class AppDrawer extends StatelessWidget {
   Widget buildLink(BuildContext context, String title, String route) {
     return ListTile(
@@ -28,6 +30,12 @@ class AppDrawer extends StatelessWidget {
                 child: Column(children: [
                   buildLink(context, 'file-picker', 'file-picker'),
                   buildLink(context, 'path-provider', 'path-provider'),
+                  buildLink(context, 'file-saver', 'file-saver'),
+                  buildLink(
+                    context,
+                    FB2ReaderScreen.pathName,
+                    FB2ReaderScreen.pathName,
+                  ),
                 ]),
               ),
             ),

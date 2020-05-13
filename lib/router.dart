@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_fb2_reader/path_provider.dart';
 
 import 'drawer.dart';
-import 'file_reader/file_reader.dart';
+import 'fb2_reader.dart';
+import 'file_reader.dart';
+import 'file_saver.dart';
+import 'path_provider.dart';
 
 Route<dynamic> generateRoutes(RouteSettings settings) {
   switch (settings.name) {
@@ -10,6 +12,10 @@ Route<dynamic> generateRoutes(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => FileReaderScreen());
     case 'path-provider':
       return MaterialPageRoute(builder: (_) => PathProviderScreen());
+    case 'file-saver':
+      return MaterialPageRoute(builder: (_) => FileSaverScreen());
+    case FB2ReaderScreen.pathName:
+      return MaterialPageRoute(builder: (_) => FB2ReaderScreen());
     default:
       return MaterialPageRoute(builder: (_) => DefaultScreen(settings.name));
   }

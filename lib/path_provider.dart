@@ -34,12 +34,6 @@ class _PathProviderAppState extends State<PathProviderApp> {
   Future<List<Directory>> _externalStorageDirectories;
   Future<List<Directory>> _externalCacheDirectories;
 
-  void _requestTempDirectory() {
-    setState(() {
-      _tempDirectory = getTemporaryDirectory();
-    });
-  }
-
   Widget _buildDirectory(
     BuildContext context,
     AsyncSnapshot<Directory> snapshot,
@@ -51,6 +45,9 @@ class _PathProviderAppState extends State<PathProviderApp> {
         text = Text('Error: ${snapshot.error}');
       } else if (snapshot.hasData) {
         text = Text('path: ${snapshot.data.path}');
+        snapshot.data.list(recursive: true).forEach((item) {
+          print(item.path);
+        });
       } else {
         text = const Text('path unavailable');
       }
@@ -69,7 +66,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
       if (snapshot.hasError) {
         text = Text('Error: ${snapshot.error}');
       } else if (snapshot.hasData) {
-        final combined = snapshot.data.map((Directory d) => d.path).join('\n');
+        final combined = snapshot.data.map((d) => d.path).join('\n\n');
         text = Text('paths: $combined');
       } else {
         text = const Text('path unavailable');
@@ -77,6 +74,12 @@ class _PathProviderAppState extends State<PathProviderApp> {
     }
 
     return Padding(padding: const EdgeInsets.all(16.0), child: text);
+  }
+
+  void _requestTempDirectory() {
+    setState(() {
+      _tempDirectory = getTemporaryDirectory();
+    });
   }
 
   void _requestAppDocumentsDirectory() {
