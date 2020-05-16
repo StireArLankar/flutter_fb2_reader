@@ -2,12 +2,12 @@ import 'package:flutter/material.dart' hide RefreshIndicator;
 import 'package:xml/xml.dart' as xml;
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-class FB2ReaderScreenV2 extends StatelessWidget {
-  static const String pathName = 'fb2-reader-v2';
+class FB2ReaderScreenV3 extends StatelessWidget {
+  static const String pathName = 'fb2-reader-v3';
 
   final xml.XmlDocument document;
 
-  const FB2ReaderScreenV2(this.document, {Key key}) : super(key: key);
+  const FB2ReaderScreenV3(this.document, {Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -70,31 +70,11 @@ class Chapter extends StatefulWidget {
 
 class _ChapterState extends State<Chapter> {
   final _refreshController = RefreshController();
-  final _scrollController = ScrollController();
-
-  // _scrollListener() {
-  //   print(
-  //     'Offset: ${_scrollController.offset}, max: ${_scrollController.position.maxScrollExtent}',
-  //   );
-  // }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _scrollController.addListener(_scrollListener);
-  //   Future.microtask(() => print('Start: ${_scrollController.offset}'));
-  // }
-
-  @override
-  void dispose() {
-    _refreshController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
+  ScrollController _scrollController;
 
   _onRefresh() {
     widget.pageCtr.previousPage(
-      duration: Duration(milliseconds: 300),
+      duration: Duration(milliseconds: 1000),
       curve: Curves.ease,
     );
     _refreshController.refreshCompleted();
@@ -102,10 +82,25 @@ class _ChapterState extends State<Chapter> {
 
   _onLoading() {
     widget.pageCtr.nextPage(
-      duration: Duration(milliseconds: 300),
+      duration: Duration(milliseconds: 1000),
       curve: Curves.ease,
     );
     _refreshController.loadComplete();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final str = widget.section.getAttribute('offset') ?? "0.0";
+    final percent = double.parse(str);
+    _scrollController = ScrollController(initialScrollOffset: percent);
+  }
+
+  @override
+  void dispose() {
+    final offset = _refreshController.position.pixels;
+    widget.section.setAttribute('offset', offset.toString());
+    super.dispose();
   }
 
   @override
@@ -118,27 +113,31 @@ class _ChapterState extends State<Chapter> {
         .toList();
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.max,
       children: <Widget>[
         buildHeader(title, widget.index, widget.max),
         Expanded(
-          child: SmartRefresher(
-            scrollController: _scrollController,
-            controller: _refreshController,
-            header: ClassicHeader(),
-            footer: ClassicFooter(
-              loadStyle: LoadStyle.HideAlways,
-              textStyle: TextStyle(fontSize: 0),
+          child: Scrollbar(
+            controller: _scrollController,
+            child: SmartRefresher(
+              controller: _refreshController,
+              header: ClassicHeader(),
+              footer: ClassicFooter(
+                loadStyle: LoadStyle.HideAlways,
+                textStyle: TextStyle(fontSize: 0),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: p.map(buildText).toList(),
+                ),
+              ),
+              scrollController: _scrollController,
+              enablePullDown: widget.index > 0,
+              enablePullUp: widget.index < widget.max,
+              onLoading: _onLoading,
+              onRefresh: _onRefresh,
             ),
-            child: ListView.builder(
-              controller: _scrollController,
-              key: PageStorageKey(widget.index),
-              itemBuilder: (ctx, i) => buildText(p[i]),
-              itemCount: p.length,
-            ),
-            enablePullDown: widget.index > 0,
-            enablePullUp: widget.index < widget.max,
-            onLoading: _onLoading,
-            onRefresh: _onRefresh,
           ),
         ),
       ],
@@ -155,16 +154,22 @@ class _ChapterState extends State<Chapter> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Text(title),
-          if (index > 0)
-            IconButton(
-              icon: Icon(Icons.arrow_upward),
-              onPressed: () => widget.pageCtr.jumpToPage(index - 1),
-            ),
-          if (index < max)
-            IconButton(
-              icon: Icon(Icons.arrow_downward),
-              onPressed: () => widget.pageCtr.jumpToPage(index + 1),
-            ),
+          Row(
+            children: <Widget>[
+              IconButton(
+                icon: Icon(Icons.arrow_upward),
+                onPressed: index > 0
+                    ? () => widget.pageCtr.jumpToPage(index - 1)
+                    : null,
+              ),
+              IconButton(
+                icon: Icon(Icons.arrow_downward),
+                onPressed: index < max
+                    ? () => widget.pageCtr.jumpToPage(index + 1)
+                    : null,
+              ),
+            ],
+          ),
         ],
       ),
     );
