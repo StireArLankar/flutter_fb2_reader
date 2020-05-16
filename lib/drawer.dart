@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'fb2_reader.dart';
-import 'fb2_reader_v2.dart';
+import 'fb2_picker.dart';
 import 'file_reader.dart';
 import 'file_saver.dart';
 import 'path_provider.dart';
@@ -10,8 +9,7 @@ final routesArray = const [
   FileReaderScreen.pathName,
   PathProviderScreen.pathName,
   FileSaverScreen.pathName,
-  FB2ReaderScreen.pathName,
-  FB2ReaderScreenV2.pathName
+  FB2PickerScreen.pathName,
 ];
 
 class AppDrawer extends StatelessWidget {
