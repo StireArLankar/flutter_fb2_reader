@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart' hide RefreshIndicator;
+import 'package:provider/provider.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+
+import 'store/counter.dart';
 
 class FB2ReaderScreenV3 extends StatelessWidget {
   static const String pathName = 'fb2-reader-v3';
@@ -15,7 +18,86 @@ class FB2ReaderScreenV3 extends StatelessWidget {
       body: Center(
         child: FB2Reader(document),
       ),
-      appBar: AppBar(title: const Text('FB2 reader')),
+      appBar: AppBar(
+        title: const Text('FB2 reader V3'),
+        actions: <Widget>[
+          Builder(
+            builder: (ctx) {
+              return IconButton(
+                icon: Icon(Icons.network_cell),
+                onPressed: () {
+                  _showMyDialog(ctx);
+                },
+              );
+            },
+          )
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showMyDialog(context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (ctx) => Dia(
+        val: Provider.of<Counter>(context, listen: false).fontSize,
+      ),
+    );
+  }
+}
+
+class Dia extends StatefulWidget {
+  const Dia({Key key, this.val}) : super(key: key);
+
+  final val;
+
+  @override
+  _DiaState createState() => _DiaState();
+}
+
+class _DiaState extends State<Dia> {
+  double value = 15;
+
+  @override
+  void initState() {
+    super.initState();
+    setState(() {
+      value = widget.val;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('AlertDialog Title'),
+      content: SingleChildScrollView(
+        child: ListBody(
+          children: <Widget>[
+            Container(
+              child: Slider(
+                value: value,
+                onChanged: (newVal) {
+                  setState(() => value = newVal);
+                },
+                divisions: 10,
+                label: '$value',
+                min: 10,
+                max: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        FlatButton(
+          child: Text('Approve'),
+          onPressed: () {
+            Provider.of<Counter>(context, listen: false).setFontSize(value);
+            Navigator.of(context).pop();
+          },
+        ),
+      ],
     );
   }
 }
@@ -179,7 +261,10 @@ class _ChapterState extends State<Chapter> {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Container(
-        child: Text('\t\t\t$item', textAlign: TextAlign.justify),
+        child: Text(
+          '\t\t\t$item',
+          textAlign: TextAlign.justify,
+        ),
         alignment: Alignment.centerLeft,
       ),
     );

@@ -9,6 +9,7 @@ import 'drawer.dart';
 import 'fb2_reader.dart';
 import 'fb2_reader_v2.dart';
 import 'fb2_reader_v3.dart';
+import 'fb2_reader_v4.dart';
 
 class FB2PickerScreen extends StatelessWidget {
   static const String pathName = 'fb2-picker';
@@ -65,6 +66,14 @@ class _FB2PickerState extends State<FB2Picker> {
     );
   }
 
+  void _openReaderV4() async {
+    final document = await _openFile();
+    Navigator.of(context).pushNamed(
+      FB2ReaderScreenV4.pathName,
+      arguments: document,
+    );
+  }
+
   void _openFileExplorer() async {
     setState(() => _loadingPath = true);
 
@@ -111,6 +120,13 @@ class _FB2PickerState extends State<FB2Picker> {
             child: RaisedButton(
               onPressed: _openReaderV3,
               child: Text("Open file in readerV3"),
+            ),
+          ),
+        if (_path != null)
+          Container(
+            child: RaisedButton(
+              onPressed: _openReaderV4,
+              child: Text("Open file in readerV4"),
             ),
           ),
       ],
