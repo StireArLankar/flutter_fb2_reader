@@ -7,14 +7,16 @@ import 'package:path_provider/path_provider.dart';
 import 'drawer.dart';
 
 class FileSaverScreen extends StatelessWidget {
+  static const String pathName = 'file-saver';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: FileSaverApp(storage: CounterStorage()),
       ),
-      appBar: AppBar(title: const Text('Path provider example')),
-      drawer: AppDrawer(),
+      appBar: AppBar(title: const Text('File saver example')),
+      drawer: AppDrawer(FileSaverScreen.pathName),
     );
   }
 }

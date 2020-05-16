@@ -6,12 +6,14 @@ import 'package:file_picker/file_picker.dart';
 import 'drawer.dart';
 
 class FileReaderScreen extends StatelessWidget {
+  static const String pathName = 'file-picker';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(child: FilePickerDemo()),
       appBar: AppBar(title: const Text('File Picker example app')),
-      drawer: AppDrawer(),
+      drawer: AppDrawer(FileReaderScreen.pathName),
     );
   }
 }

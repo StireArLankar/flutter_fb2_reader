@@ -17,6 +17,7 @@ environment:
   sdk: '>=2.2.2 <3.0.0'
 
 dependencies:
+  pull_to_refresh: ^1.5.7
   sticky_headers: '^0.1.8'
   scrollable_positioned_list: ^0.1.5
   xml: ^4.1.0

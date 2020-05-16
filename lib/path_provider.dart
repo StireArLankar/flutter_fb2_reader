@@ -7,12 +7,14 @@ import 'package:path_provider/path_provider.dart';
 import 'drawer.dart';
 
 class PathProviderScreen extends StatelessWidget {
+  static const String pathName = 'path-provider';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(child: PathProviderApp()),
       appBar: AppBar(title: const Text('Path provider example')),
-      drawer: AppDrawer(),
+      drawer: AppDrawer(PathProviderScreen.pathName),
     );
   }
 }

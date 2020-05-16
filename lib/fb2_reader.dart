@@ -19,7 +19,7 @@ class FB2ReaderScreen extends StatelessWidget {
         child: FB2Reader(),
       ),
       appBar: AppBar(title: const Text('FB2 reader')),
-      drawer: AppDrawer(),
+      drawer: AppDrawer(FB2ReaderScreen.pathName),
     );
   }
 }
@@ -101,38 +101,45 @@ class _FB2ReaderState extends State<FB2Reader> {
                 .findElements('p')
                 .map((item) => item.text)
                 .where((item) => item.trim().length > 0);
+            final max = sections.length - 1;
+
+            print('rebuild $index');
 
             return StickyHeader(
-              header: Container(
-                height: 50.0,
-                color: Colors.blueGrey[100],
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text(title),
-                    if (index > 0)
-                      IconButton(
-                        icon: Icon(Icons.arrow_upward),
-                        onPressed: () => _scrollController.jumpTo(
-                          index: index - 1,
-                        ),
-                      ),
-                    if (index < sections.length - 1)
-                      IconButton(
-                        icon: Icon(Icons.arrow_downward),
-                        onPressed: () => _scrollController.jumpTo(
-                          index: index + 1,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+              header: buildHeader(title, index, max),
               content: Column(children: p.map(buildText).toList()),
             );
           }),
         ),
+      ),
+    );
+  }
+
+  Container buildHeader(String title, int index, int max) {
+    return Container(
+      height: 50.0,
+      color: Colors.blueGrey[100],
+      padding: EdgeInsets.symmetric(horizontal: 16.0),
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Text(title),
+          if (index > 0)
+            IconButton(
+              icon: Icon(Icons.arrow_upward),
+              onPressed: () => _scrollController.jumpTo(
+                index: index - 1,
+              ),
+            ),
+          if (index < max)
+            IconButton(
+              icon: Icon(Icons.arrow_downward),
+              onPressed: () => _scrollController.jumpTo(
+                index: index + 1,
+              ),
+            ),
+        ],
       ),
     );
   }
