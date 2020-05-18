@@ -6,6 +6,7 @@ import 'fb2_reader.dart';
 import 'fb2_reader_v2.dart';
 import 'fb2_reader_v3.dart';
 import 'fb2_reader_v4.dart';
+import 'fb2_reader_v5.dart';
 import 'file_reader.dart';
 import 'file_saver.dart';
 import 'path_provider.dart';
@@ -35,6 +36,10 @@ Route<dynamic> generateRoutes(RouteSettings settings) {
     case FB2ReaderScreenV4.pathName:
       return MaterialPageRoute(
         builder: (_) => FB2ReaderScreenV4(settings.arguments),
+      );
+    case FB2ReaderScreenV5.pathName:
+      return MaterialPageRoute(
+        builder: (_) => FB2ReaderScreenV5(settings.arguments),
       );
     default:
       return MaterialPageRoute(builder: (_) => DefaultScreen(settings.name));

@@ -2,15 +2,19 @@ import 'package:flutter/material.dart' hide RefreshIndicator;
 import 'package:provider/provider.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:flutter_html/style.dart';
 
 import 'store/counter.dart';
 
-class FB2ReaderScreenV3 extends StatelessWidget {
-  static const String pathName = 'fb2-reader-v3';
+// TODO: flutter_html and xml are incompatible
+
+class FB2ReaderScreenV5 extends StatelessWidget {
+  static const String pathName = 'fb2-reader-v5';
 
   final xml.XmlDocument document;
 
-  const FB2ReaderScreenV3(this.document, {Key key}) : super(key: key);
+  const FB2ReaderScreenV5(this.document, {Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +23,7 @@ class FB2ReaderScreenV3 extends StatelessWidget {
         child: FB2Reader(document),
       ),
       appBar: AppBar(
-        title: const Text('FB2 reader V3'),
+        title: const Text('FB2 reader V5'),
         actions: <Widget>[
           Builder(
             builder: (ctx) {
@@ -113,6 +117,29 @@ class FB2Reader extends StatefulWidget {
 
 class _FB2ReaderState extends State<FB2Reader> {
   final _pageCtr = PageController();
+  xml.XmlDocument document;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final binaries = widget.document.findAllElements('binary');
+    final imgs = widget.document.findAllElements('img').forEach((element) {
+      final id = element.getAttribute('l:href').split('#').last;
+      final binary = binaries.firstWhere((element) {
+        return element.getAttribute('id') == id;
+      });
+
+      if (binary != null) {
+        // element.setAttribute('src', "data:image/png;base64, ${binary.text}");
+        element
+            .toXmlString()
+            .replaceAll('>', 'src="data:image/png;base64, ${binary.text}"');
+      }
+    });
+
+    // <image l:href="#img2.jpg" id="img2.jpg" />
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -171,28 +198,11 @@ class _ChapterState extends State<Chapter> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    final str = widget.section.getAttribute('offset') ?? "0.0";
-    final percent = double.parse(str);
-    _scrollController = ScrollController(initialScrollOffset: percent);
-  }
-
-  @override
-  void dispose() {
-    final offset = _refreshController.position.pixels;
-    // widget.section.setAttribute('offset', offset.toString());
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final title = widget.section.findElements('title').first.text.trim();
-    final p = widget.section
-        .findElements('p')
-        .map((item) => item.text)
-        .where((item) => item.trim().length > 0)
-        .toList();
+
+    final children =
+        widget.section.children.map((child) => child.toXmlString());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -211,7 +221,7 @@ class _ChapterState extends State<Chapter> {
               ),
               child: SingleChildScrollView(
                 child: Column(
-                  children: p.map(buildText).toList(),
+                  children: children.map(buildHtml).toList(),
                 ),
               ),
               scrollController: _scrollController,
@@ -254,6 +264,15 @@ class _ChapterState extends State<Chapter> {
           ),
         ],
       ),
+    );
+  }
+
+  Html buildHtml(String data) {
+    return Html(
+      data: data,
+      style: {
+        "img": Style(alignment: Alignment.center),
+      },
     );
   }
 
