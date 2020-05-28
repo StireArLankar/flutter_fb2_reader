@@ -10,6 +10,9 @@ import 'store/counter.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GlobalConfiguration().loadFromAsset("app_settings");
+  final mp = GlobalConfiguration().appConfig;
+
+  print(mp);
 
   runApp(
     MultiProvider(

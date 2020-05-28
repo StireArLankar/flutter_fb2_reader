@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart' hide RefreshIndicator;
 import 'package:provider/provider.dart';
 import 'package:xml/xml.dart' as xml;
@@ -15,21 +17,15 @@ class FB2ReaderScreenV3 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: FB2Reader(document),
-      ),
+      body: Center(child: FB2Reader(document)),
       appBar: AppBar(
         title: const Text('FB2 reader V3'),
         actions: <Widget>[
           Builder(
-            builder: (ctx) {
-              return IconButton(
-                icon: Icon(Icons.network_cell),
-                onPressed: () {
-                  _showMyDialog(ctx);
-                },
-              );
-            },
+            builder: (ctx) => IconButton(
+              icon: Icon(Icons.network_cell),
+              onPressed: () => _showMyDialog(ctx),
+            ),
           )
         ],
       ),
@@ -62,10 +58,10 @@ class _DiaState extends State<Dia> {
   @override
   void initState() {
     super.initState();
-    setState(() {
-      value = widget.val;
-    });
+    setState(() => value = widget.val);
   }
+
+  void onSliderChange(double newVal) => setState(() => value = newVal);
 
   @override
   Widget build(BuildContext context) {
@@ -74,12 +70,11 @@ class _DiaState extends State<Dia> {
       content: SingleChildScrollView(
         child: ListBody(
           children: <Widget>[
+            Text('Hello World'),
             Container(
               child: Slider(
                 value: value,
-                onChanged: (newVal) {
-                  setState(() => value = newVal);
-                },
+                onChanged: onSliderChange,
                 divisions: 10,
                 label: '$value',
                 min: 10,
@@ -113,6 +108,11 @@ class FB2Reader extends StatefulWidget {
 
 class _FB2ReaderState extends State<FB2Reader> {
   final _pageCtr = PageController();
+  final Map<int, double> offsetsMap = Map();
+
+  setOffset(int chapter, double offset) {
+    offsetsMap[chapter] = offset;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +124,14 @@ class _FB2ReaderState extends State<FB2Reader> {
       child: PageView.builder(
         controller: _pageCtr,
         scrollDirection: Axis.vertical,
-        itemBuilder: (_, i) => Chapter(sections[i], i, max, _pageCtr),
+        itemBuilder: (_, i) => Chapter(
+          sections[i],
+          i,
+          max,
+          _pageCtr,
+          setOffset,
+          offsetsMap,
+        ),
       ),
     );
   }
@@ -142,9 +149,18 @@ class Chapter extends StatefulWidget {
   final int index;
   final int max;
   final PageController pageCtr;
+  final void Function(int, double) setOffset;
+  final Map<int, double> offsetsMap;
 
-  Chapter(this.section, this.index, this.max, this.pageCtr, {Key key})
-      : super(key: key);
+  Chapter(
+    this.section,
+    this.index,
+    this.max,
+    this.pageCtr,
+    this.setOffset,
+    this.offsetsMap, {
+    Key key,
+  }) : super(key: key);
 
   @override
   _ChapterState createState() => _ChapterState();
@@ -173,15 +189,15 @@ class _ChapterState extends State<Chapter> {
   @override
   void initState() {
     super.initState();
-    final str = widget.section.getAttribute('offset') ?? "0.0";
-    final percent = double.parse(str);
-    _scrollController = ScrollController(initialScrollOffset: percent);
+    final offset = widget.offsetsMap[widget.index] ?? 0.0;
+    print('Offset of ${widget.index}: $offset');
+    _scrollController = ScrollController(initialScrollOffset: offset);
   }
 
   @override
   void dispose() {
     final offset = _refreshController.position.pixels;
-    // widget.section.setAttribute('offset', offset.toString());
+    widget.setOffset(widget.index, offset);
     super.dispose();
   }
 
@@ -210,9 +226,7 @@ class _ChapterState extends State<Chapter> {
                 textStyle: TextStyle(fontSize: 0),
               ),
               child: SingleChildScrollView(
-                child: Column(
-                  children: p.map(buildText).toList(),
-                ),
+                child: Column(children: p.map(buildText).toList()),
               ),
               scrollController: _scrollController,
               enablePullDown: widget.index > 0,
