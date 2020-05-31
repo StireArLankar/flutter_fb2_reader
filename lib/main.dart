@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:provider/provider.dart';
 
-import 'fb2_picker.dart';
 import 'router.dart';
+import 'storage_parser.dart';
 import 'store/counter.dart';
 
 void main() {
@@ -57,7 +57,7 @@ class App extends StatelessWidget {
             primarySwatch: Colors.blue,
             accentColor: Colors.red,
           ),
-          initialRoute: FB2PickerScreen.pathName,
+          initialRoute: StorageParser.pathName,
           onGenerateRoute: generateRoutes,
         );
       },

@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide RefreshIndicator;
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:provider/provider.dart';
@@ -76,18 +77,19 @@ class _DiaState extends State<Dia> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('AlertDialog Title'),
+      title: Text('Font Size'),
       content: SingleChildScrollView(
         child: ListBody(
           children: <Widget>[
             Container(
+              padding: EdgeInsets.only(top: 50),
               child: Slider(
                 value: value,
                 onChanged: (newVal) {
                   setState(() => value = newVal);
                 },
                 divisions: 10,
-                label: '$value',
+                label: '${value.toInt()}',
                 min: 10,
                 max: 20,
               ),
@@ -121,18 +123,23 @@ class FB2Reader extends StatefulWidget {
 class _FB2ReaderState extends State<FB2Reader> {
   final _pageCtr = PageController();
   final Map<int, double> offsetsMap = Map();
+  xml.XmlDocument document;
+
+  bool isReady = false;
 
   setOffset(int chapter, double offset) {
     offsetsMap[chapter] = offset;
   }
 
-  @override
-  void initState() {
-    super.initState();
+  static Future<xml.XmlDocument> replaceImages(xml.XmlDocument document) {
+    final binaries = document.findAllElements('binary');
 
-    final binaries = widget.document.findAllElements('binary');
+    document.findAllElements('emphasis').forEach((element) {
+      final str = element.toXmlString().replaceAll('emphasis', 'i');
+      element.replace(xml.XmlDocument.parse(str).findElements('i').first.copy());
+    });
 
-    widget.document.findAllElements('img').forEach((element) {
+    document.findAllElements('img').forEach((element) {
       final id = element.getAttribute('l:href').split('#').last;
       final binary = binaries.firstWhere((element) {
         return element.getAttribute('id') == id;
@@ -148,11 +155,47 @@ class _FB2ReaderState extends State<FB2Reader> {
         element.replace(temp);
       }
     });
+
+    return Future.value(document);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() async {
+      print('Start: ${DateTime.now()}');
+      final doc = await compute(replaceImages, widget.document);
+      print('End: ${DateTime.now()}');
+
+      setState(() {
+        document = doc;
+        isReady = true;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final sections = widget.document.findAllElements('section').toList();
+    if (!isReady) {
+      final size = MediaQuery.of(context).size;
+      final dimension = size.width > size.height ? size.height * 0.8 : size.width * 0.8;
+
+      return Center(
+        child: SizedBox(
+          child: CircularProgressIndicator(
+            strokeWidth: dimension / 10,
+          ),
+          height: dimension,
+          width: dimension,
+        ),
+      );
+    }
+
+    final sections = document.findAllElements('section').where((section) {
+      return section.innerText.trim().length > 0;
+    }).toList();
+
     final max = sections.length - 1;
 
     return RefreshConfiguration(
@@ -226,6 +269,7 @@ class _ChapterState extends State<Chapter> {
   void initState() {
     super.initState();
     final offset = widget.offsetsMap[widget.index] ?? 0.0;
+    print('init offset ${widget.index}: $offset');
     _scrollController = ScrollController(initialScrollOffset: offset);
   }
 
@@ -233,6 +277,7 @@ class _ChapterState extends State<Chapter> {
   void dispose() {
     final offset = _refreshController.position.pixels;
     widget.setOffset(widget.index, offset);
+    print('end offset ${widget.index}: $offset');
     super.dispose();
   }
 
@@ -256,10 +301,8 @@ class _ChapterState extends State<Chapter> {
 
           return true;
         })
-        .map((child) => child.toXmlString().trim())
-        .where((element) => element.length > 0)
-        .toList()
-        .map((child) => child.trim());
+        .map((child) => child.toXmlString().trim().replaceAll(RegExp(r">\s+<"), '><'))
+        .where((element) => element.length > 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -271,9 +314,14 @@ class _ChapterState extends State<Chapter> {
             controller: _scrollController,
             child: SmartRefresher(
               controller: _refreshController,
-              header: ClassicHeader(),
+              header: ClassicHeader(
+                textStyle: TextStyle(fontSize: 0),
+              ),
               footer: ClassicFooter(
                 loadStyle: LoadStyle.HideAlways,
+                canLoadingIcon: Icon(Icons.arrow_upward),
+                loadingIcon: Icon(Icons.done),
+                idleIcon: Icon(Icons.access_time),
                 textStyle: TextStyle(fontSize: 0),
               ),
               child: SingleChildScrollView(
@@ -323,6 +371,8 @@ class _ChapterState extends State<Chapter> {
   Widget buildHtml(String data) {
     final store = Provider.of<Counter>(context, listen: false);
 
+    // print(data);
+
     return Observer(
       builder: (ctx) => Html(
         data: data,
@@ -335,12 +385,21 @@ class _ChapterState extends State<Chapter> {
           "img": Style(
             alignment: Alignment.center,
             height: MediaQuery.of(ctx).size.height / 2,
+            backgroundColor: Colors.black12,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
           ),
           "p": Style(
             padding: const EdgeInsets.all(0),
-            margin: const EdgeInsets.all(5),
+            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
             textAlign: TextAlign.justify,
             fontSize: FontSize(store.fontSize),
+            whiteSpace: WhiteSpace.PRE,
+          ),
+          'i': Style(
+            textAlign: TextAlign.center,
+          ),
+          'strong': Style(
+            textAlign: TextAlign.center,
           ),
         },
       ),

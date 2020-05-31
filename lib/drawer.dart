@@ -5,8 +5,10 @@ import 'file_reader.dart';
 import 'file_saver.dart';
 import 'path_provider.dart';
 import 'path_provider_v2.dart';
+import 'storage_parser.dart';
 
 final routesArray = const [
+  StorageParser.pathName,
   FileReaderScreen.pathName,
   PathProviderScreen.pathName,
   PathProviderScreenV2.pathName,
