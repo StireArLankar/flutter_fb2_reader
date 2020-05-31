@@ -110,7 +110,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
 
   void _requestExternalStorageDirectories(StorageDirectory type) {
     setState(() {
-      _externalStorageDirectories = getExternalStorageDirectories(type: type);
+      _externalStorageDirectories = getExternalStorageDirectories();
     });
   }
 

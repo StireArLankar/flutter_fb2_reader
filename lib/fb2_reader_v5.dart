@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart' hide RefreshIndicator;
 import 'package:provider/provider.dart';
 import 'package:xml/xml.dart' as xml;
@@ -6,8 +8,6 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_html/style.dart';
 
 import 'store/counter.dart';
-
-// TODO: flutter_html and xml are incompatible
 
 class FB2ReaderScreenV5 extends StatelessWidget {
   static const String pathName = 'fb2-reader-v5';
@@ -124,27 +124,31 @@ class _FB2ReaderState extends State<FB2Reader> {
     super.initState();
 
     final binaries = widget.document.findAllElements('binary');
-    final imgs = widget.document.findAllElements('img').forEach((element) {
+
+    widget.document.findAllElements('img').forEach((element) {
       final id = element.getAttribute('l:href').split('#').last;
       final binary = binaries.firstWhere((element) {
         return element.getAttribute('id') == id;
       });
 
       if (binary != null) {
-        // element.setAttribute('src', "data:image/png;base64, ${binary.text}");
-        element
+        final str = element
             .toXmlString()
-            .replaceAll('>', 'src="data:image/png;base64, ${binary.text}"');
+            .replaceAll('/>', ' src="data:image/png;base64, ${binary.text}" />');
+
+        final temp = xml.XmlDocument.parse(str).findElements('img').first.copy();
+
+        element.replace(temp);
       }
     });
-
-    // <image l:href="#img2.jpg" id="img2.jpg" />
   }
 
   @override
   Widget build(BuildContext context) {
     final sections = widget.document.findAllElements('section').toList();
     final max = sections.length - 1;
+
+    return Chapter(sections[0], 0, 0, _pageCtr);
 
     return RefreshConfiguration(
       enableBallisticLoad: false,
@@ -170,8 +174,7 @@ class Chapter extends StatefulWidget {
   final int max;
   final PageController pageCtr;
 
-  Chapter(this.section, this.index, this.max, this.pageCtr, {Key key})
-      : super(key: key);
+  Chapter(this.section, this.index, this.max, this.pageCtr, {Key key}) : super(key: key);
 
   @override
   _ChapterState createState() => _ChapterState();
@@ -201,8 +204,26 @@ class _ChapterState extends State<Chapter> {
   Widget build(BuildContext context) {
     final title = widget.section.findElements('title').first.text.trim();
 
-    final children =
-        widget.section.children.map((child) => child.toXmlString());
+    final children = widget.section.children
+        .where((child) {
+          if (child.nodeType == xml.XmlNodeType.ELEMENT) {
+            final name = (child as xml.XmlElement).name;
+
+            if (name.toString() == 'img') {
+              return true;
+            } else if (child.toXmlString().contains('<title>')) {
+              return false;
+            } else {
+              return child.text.trim().length > 0;
+            }
+          }
+
+          return true;
+        })
+        .map((child) => child.toXmlString().trim())
+        .where((element) => element.length > 0)
+        .toList()
+        .map((child) => child.trim());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -250,15 +271,11 @@ class _ChapterState extends State<Chapter> {
             children: <Widget>[
               IconButton(
                 icon: Icon(Icons.arrow_upward),
-                onPressed: index > 0
-                    ? () => widget.pageCtr.jumpToPage(index - 1)
-                    : null,
+                onPressed: index > 0 ? () => widget.pageCtr.jumpToPage(index - 1) : null,
               ),
               IconButton(
                 icon: Icon(Icons.arrow_downward),
-                onPressed: index < max
-                    ? () => widget.pageCtr.jumpToPage(index + 1)
-                    : null,
+                onPressed: index < max ? () => widget.pageCtr.jumpToPage(index + 1) : null,
               ),
             ],
           ),
@@ -267,18 +284,28 @@ class _ChapterState extends State<Chapter> {
     );
   }
 
-  Html buildHtml(String data) {
+  Widget buildHtml(String data) {
     return Html(
       data: data,
+      blacklistedElements: ["title"],
       style: {
+        "body ": Style(
+          margin: const EdgeInsets.all(0),
+          padding: const EdgeInsets.all(0),
+        ),
         "img": Style(alignment: Alignment.center),
+        "p": Style(
+          padding: const EdgeInsets.all(0),
+          margin: const EdgeInsets.all(5),
+          textAlign: TextAlign.justify,
+        ),
       },
     );
   }
 
   Widget buildText(String item) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Container(
         child: Text(
           '\t\t\t$item',

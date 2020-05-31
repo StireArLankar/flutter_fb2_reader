@@ -10,6 +10,7 @@ import 'fb2_reader_v5.dart';
 import 'file_reader.dart';
 import 'file_saver.dart';
 import 'path_provider.dart';
+import 'path_provider_v2.dart';
 
 Route<dynamic> generateRoutes(RouteSettings settings) {
   switch (settings.name) {
@@ -17,6 +18,8 @@ Route<dynamic> generateRoutes(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => FileReaderScreen());
     case PathProviderScreen.pathName:
       return MaterialPageRoute(builder: (_) => PathProviderScreen());
+    case PathProviderScreenV2.pathName:
+      return MaterialPageRoute(builder: (_) => PathProviderScreenV2());
     case FileSaverScreen.pathName:
       return MaterialPageRoute(builder: (_) => FileSaverScreen());
     case FB2PickerScreen.pathName:

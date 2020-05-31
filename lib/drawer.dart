@@ -4,10 +4,12 @@ import 'fb2_picker.dart';
 import 'file_reader.dart';
 import 'file_saver.dart';
 import 'path_provider.dart';
+import 'path_provider_v2.dart';
 
 final routesArray = const [
   FileReaderScreen.pathName,
   PathProviderScreen.pathName,
+  PathProviderScreenV2.pathName,
   FileSaverScreen.pathName,
   FB2PickerScreen.pathName,
 ];
@@ -45,8 +47,7 @@ class AppDrawer extends StatelessWidget {
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
-                  children:
-                      routes.map((item) => buildLink(ctx, item, item)).toList(),
+                  children: routes.map((item) => buildLink(ctx, item, item)).toList(),
                 ),
               ),
             ),
