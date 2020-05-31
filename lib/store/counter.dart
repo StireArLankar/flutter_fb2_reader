@@ -1,5 +1,5 @@
-import 'package:global_configuration/global_configuration.dart';
 import 'package:mobx/mobx.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Include generated file
 part 'counter.g.dart';
@@ -10,13 +10,23 @@ class Counter = _Counter with _$Counter;
 // The store-class
 abstract class _Counter with Store {
   _Counter() {
-    final mp = GlobalConfiguration().appConfig;
-    print(mp['fontSize'].runtimeType);
-    fontSize = mp['fontSize'] ?? 14.0;
+    SharedPreferences.getInstance().then((prefs) {
+      try {
+        fontSize = prefs.getDouble('fontSize');
+        if (fontSize == null) throw Error();
+      } catch (e) {
+        fontSize = 14.0;
+        prefs.setDouble('fontSize', 14.0);
+      }
+      isInitialized = true;
+    });
   }
 
   @observable
   int value = 0;
+
+  @observable
+  bool isInitialized = false;
 
   @observable
   double fontSize;
@@ -27,8 +37,11 @@ abstract class _Counter with Store {
   }
 
   @action
-  void setFontSize(double size) {
-    fontSize = size;
-    GlobalConfiguration().updateValue('fontSize', size);
+  Future<void> setFontSize(double size) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setDouble('fontSize', size);
+      fontSize = size;
+    } catch (e) {}
   }
 }

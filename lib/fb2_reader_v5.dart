@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart' hide RefreshIndicator;
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:provider/provider.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -66,6 +67,7 @@ class _DiaState extends State<Dia> {
   @override
   void initState() {
     super.initState();
+    print(widget.val);
     setState(() {
       value = widget.val;
     });
@@ -97,8 +99,9 @@ class _DiaState extends State<Dia> {
         FlatButton(
           child: Text('Approve'),
           onPressed: () {
-            Provider.of<Counter>(context, listen: false).setFontSize(value);
-            Navigator.of(context).pop();
+            Provider.of<Counter>(context, listen: false)
+                .setFontSize(value)
+                .then((_) => Navigator.of(context).pop());
           },
         ),
       ],
@@ -117,7 +120,11 @@ class FB2Reader extends StatefulWidget {
 
 class _FB2ReaderState extends State<FB2Reader> {
   final _pageCtr = PageController();
-  xml.XmlDocument document;
+  final Map<int, double> offsetsMap = Map();
+
+  setOffset(int chapter, double offset) {
+    offsetsMap[chapter] = offset;
+  }
 
   @override
   void initState() {
@@ -148,14 +155,19 @@ class _FB2ReaderState extends State<FB2Reader> {
     final sections = widget.document.findAllElements('section').toList();
     final max = sections.length - 1;
 
-    return Chapter(sections[0], 0, 0, _pageCtr);
-
     return RefreshConfiguration(
       enableBallisticLoad: false,
       child: PageView.builder(
         controller: _pageCtr,
         scrollDirection: Axis.vertical,
-        itemBuilder: (_, i) => Chapter(sections[i], i, max, _pageCtr),
+        itemBuilder: (_, i) => Chapter(
+          sections[i],
+          i,
+          max,
+          _pageCtr,
+          setOffset,
+          offsetsMap,
+        ),
       ),
     );
   }
@@ -173,8 +185,18 @@ class Chapter extends StatefulWidget {
   final int index;
   final int max;
   final PageController pageCtr;
+  final void Function(int, double) setOffset;
+  final Map<int, double> offsetsMap;
 
-  Chapter(this.section, this.index, this.max, this.pageCtr, {Key key}) : super(key: key);
+  Chapter(
+    this.section,
+    this.index,
+    this.max,
+    this.pageCtr,
+    this.setOffset,
+    this.offsetsMap, {
+    Key key,
+  }) : super(key: key);
 
   @override
   _ChapterState createState() => _ChapterState();
@@ -198,6 +220,20 @@ class _ChapterState extends State<Chapter> {
       curve: Curves.ease,
     );
     _refreshController.loadComplete();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final offset = widget.offsetsMap[widget.index] ?? 0.0;
+    _scrollController = ScrollController(initialScrollOffset: offset);
+  }
+
+  @override
+  void dispose() {
+    final offset = _refreshController.position.pixels;
+    widget.setOffset(widget.index, offset);
+    super.dispose();
   }
 
   @override
@@ -285,33 +321,28 @@ class _ChapterState extends State<Chapter> {
   }
 
   Widget buildHtml(String data) {
-    return Html(
-      data: data,
-      blacklistedElements: ["title"],
-      style: {
-        "body ": Style(
-          margin: const EdgeInsets.all(0),
-          padding: const EdgeInsets.all(0),
-        ),
-        "img": Style(alignment: Alignment.center),
-        "p": Style(
-          padding: const EdgeInsets.all(0),
-          margin: const EdgeInsets.all(5),
-          textAlign: TextAlign.justify,
-        ),
-      },
-    );
-  }
+    final store = Provider.of<Counter>(context, listen: false);
 
-  Widget buildText(String item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Container(
-        child: Text(
-          '\t\t\t$item',
-          textAlign: TextAlign.justify,
-        ),
-        alignment: Alignment.centerLeft,
+    return Observer(
+      builder: (ctx) => Html(
+        data: data,
+        blacklistedElements: ["title"],
+        style: {
+          "body ": Style(
+            margin: const EdgeInsets.all(0),
+            padding: const EdgeInsets.all(0),
+          ),
+          "img": Style(
+            alignment: Alignment.center,
+            height: MediaQuery.of(ctx).size.height / 2,
+          ),
+          "p": Style(
+            padding: const EdgeInsets.all(0),
+            margin: const EdgeInsets.all(5),
+            textAlign: TextAlign.justify,
+            fontSize: FontSize(store.fontSize),
+          ),
+        },
       ),
     );
   }

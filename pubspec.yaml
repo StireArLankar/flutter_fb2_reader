@@ -17,11 +17,11 @@ environment:
   sdk: '>=2.2.2 <3.0.0'
 
 dependencies:
+  shared_preferences: ^0.5.7+3
   xml: ^4.1.0
   flutter_svg: ^0.17.4
   path_provider_ex: ^1.0.1
   flutter_html: ^1.0.0-pre.1
-  global_configuration: ^1.5.0
   mobx: ^1.0.0
   flutter_mobx: ^1.0.0
   provider: ^4.1.2

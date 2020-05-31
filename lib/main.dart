@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:global_configuration/global_configuration.dart';
 import 'package:provider/provider.dart';
 
 import 'fb2_picker.dart';
 import 'router.dart';
 import 'store/counter.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await GlobalConfiguration().loadFromAsset("app_settings");
-  final mp = GlobalConfiguration().appConfig;
-
-  print(mp);
-
+void main() {
   runApp(
     MultiProvider(
       providers: [
@@ -33,14 +26,36 @@ class App extends StatelessWidget {
 
     return Observer(
       builder: (ctx) {
+        if (!store.isInitialized) {
+          return MaterialApp(
+            builder: (ctx, _) {
+              final size = MediaQuery.of(ctx).size;
+              final dimension = size.width > size.height ? size.height * 0.8 : size.width * 0.8;
+
+              return Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    child: CircularProgressIndicator(
+                      strokeWidth: dimension / 10,
+                    ),
+                    height: dimension,
+                    width: dimension,
+                  ),
+                ),
+              );
+            },
+          );
+        }
+
+        print('___');
+        print('main.dart');
+        print('---');
+
         return MaterialApp(
           title: 'Flutter file picker',
           theme: ThemeData(
             primarySwatch: Colors.blue,
             accentColor: Colors.red,
-            textTheme: TextTheme(
-              bodyText2: TextStyle(fontSize: store.fontSize),
-            ),
           ),
           initialRoute: FB2PickerScreen.pathName,
           onGenerateRoute: generateRoutes,

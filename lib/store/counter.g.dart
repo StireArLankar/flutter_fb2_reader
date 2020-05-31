@@ -24,6 +24,21 @@ mixin _$Counter on _Counter, Store {
     });
   }
 
+  final _$isInitializedAtom = Atom(name: '_Counter.isInitialized');
+
+  @override
+  bool get isInitialized {
+    _$isInitializedAtom.reportRead();
+    return super.isInitialized;
+  }
+
+  @override
+  set isInitialized(bool value) {
+    _$isInitializedAtom.reportWrite(value, super.isInitialized, () {
+      super.isInitialized = value;
+    });
+  }
+
   final _$fontSizeAtom = Atom(name: '_Counter.fontSize');
 
   @override
@@ -37,6 +52,13 @@ mixin _$Counter on _Counter, Store {
     _$fontSizeAtom.reportWrite(value, super.fontSize, () {
       super.fontSize = value;
     });
+  }
+
+  final _$setFontSizeAsyncAction = AsyncAction('_Counter.setFontSize');
+
+  @override
+  Future<void> setFontSize(double size) {
+    return _$setFontSizeAsyncAction.run(() => super.setFontSize(size));
   }
 
   final _$_CounterActionController = ActionController(name: '_Counter');
@@ -53,20 +75,10 @@ mixin _$Counter on _Counter, Store {
   }
 
   @override
-  void setFontSize(double size) {
-    final _$actionInfo =
-        _$_CounterActionController.startAction(name: '_Counter.setFontSize');
-    try {
-      return super.setFontSize(size);
-    } finally {
-      _$_CounterActionController.endAction(_$actionInfo);
-    }
-  }
-
-  @override
   String toString() {
     return '''
 value: ${value},
+isInitialized: ${isInitialized},
 fontSize: ${fontSize}
     ''';
   }
