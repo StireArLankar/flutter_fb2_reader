@@ -31,6 +31,8 @@ class FB2Reader extends StatefulWidget {
 }
 
 class _FB2ReaderState extends State<FB2Reader> {
+  final _pageCtr = PageController();
+
   @override
   Widget build(BuildContext context) {
     final sections = widget.document.findAllElements('section').toList();
@@ -38,7 +40,16 @@ class _FB2ReaderState extends State<FB2Reader> {
 
     return RefreshConfiguration(
       enableBallisticLoad: false,
-      child: Chapter(sections[0], 0, max),
+      child: PageView.builder(
+        controller: _pageCtr,
+        scrollDirection: Axis.vertical,
+        itemBuilder: (_, i) => Chapter(
+          sections[i],
+          i,
+          max,
+          _pageCtr,
+        ),
+      ),
     );
   }
 
@@ -54,45 +65,21 @@ class Chapter extends StatefulWidget {
   final xml.XmlElement section;
   final int index;
   final int max;
+  final PageController pageCtr;
 
-  Chapter(this.section, this.index, this.max, {Key key}) : super(key: key);
-
+  Chapter(this.section, this.index, this.max, this.pageCtr, {Key key}) : super(key: key);
   @override
   _ChapterState createState() => _ChapterState();
 }
 
 class _ChapterState extends State<Chapter> {
-  final _scrollController = ScrollController();
   final _itemScrollController = ItemScrollController();
   final itemPositionsListener = ItemPositionsListener.create();
-
-  _scrollListener() {
-    print(
-      'Offset: ${_scrollController.offset}, max: ${_scrollController.position.maxScrollExtent}',
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // _scrollController.addListener(_scrollListener);
-    // Future.microtask(() => print('Start: ${_scrollController.offset}'));
-    itemPositionsListener.itemPositions.addListener(() {
-      print('---');
-      itemPositionsListener.itemPositions.value.forEach(print);
-      print('---');
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final title = widget.section.findElements('title').first.text.trim();
+
     final p = widget.section
         .findElements('p')
         .map((item) => item.text)
@@ -103,17 +90,30 @@ class _ChapterState extends State<Chapter> {
       children: <Widget>[
         buildHeader(title, widget.index, widget.max),
         Expanded(
-          child: ScrollablePositionedList.builder(
-            itemBuilder: (ctx, i) => buildText(p[i]),
-            itemCount: p.length,
-            itemScrollController: _itemScrollController,
-            itemPositionsListener: itemPositionsListener,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (not) {
+              if (not.metrics.pixels + 100 < not.metrics.minScrollExtent) {
+                if (widget.index > 0) {
+                  widget.pageCtr.jumpToPage(widget.index - 1);
+                }
+              }
+
+              if (not.metrics.pixels - 100 > not.metrics.maxScrollExtent) {
+                if (widget.index < widget.max) {
+                  widget.pageCtr.jumpToPage(widget.index + 1);
+                }
+              }
+
+              return true;
+            },
+            child: ScrollablePositionedList.builder(
+              itemBuilder: (ctx, i) => buildText(p[i]),
+              itemCount: p.length,
+              itemScrollController: _itemScrollController,
+              itemPositionsListener: itemPositionsListener,
+              physics: BouncingScrollPhysics(),
+            ),
           ),
-          // child: ListView.builder(
-          //   controller: _scrollController,
-          //   itemBuilder: (ctx, i) => buildText(p[i]),
-          //   itemCount: p.length,
-          // ),
         ),
       ],
     );
@@ -129,6 +129,16 @@ class _ChapterState extends State<Chapter> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Text(title),
+          if (index > 0)
+            IconButton(
+              icon: Icon(Icons.arrow_upward),
+              onPressed: () => widget.pageCtr.jumpToPage(index - 1),
+            ),
+          if (index < max)
+            IconButton(
+              icon: Icon(Icons.arrow_downward),
+              onPressed: () => widget.pageCtr.jumpToPage(index + 1),
+            ),
         ],
       ),
     );

@@ -10,7 +10,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:xml/xml.dart' as xml;
 
 import 'drawer.dart';
-import 'fb2_reader_v5.dart';
+import 'fb2_reader_v6.dart';
 
 const bold = const TextStyle(fontWeight: FontWeight.bold);
 
@@ -87,7 +87,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
               children: <Widget>[
                 Text(snapshot.data),
                 RaisedButton(
-                  onPressed: () => _openReaderV5(snapshot.data),
+                  onPressed: () => _openReaderV6(snapshot.data),
                   child: Text("Open file"),
                 ),
               ],
@@ -156,10 +156,10 @@ class _PathProviderAppState extends State<PathProviderApp> {
     return res;
   }
 
-  void _openReaderV5(String path) async {
+  void _openReaderV6(String path) async {
     final document = await _openFile(path);
     Navigator.of(context).pushNamed(
-      FB2ReaderScreenV5.pathName,
+      FB2ReaderScreenV6.pathName,
       arguments: document,
     );
   }
@@ -188,7 +188,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
                 leading: CircleAvatar(
                   child: Text('$i'),
                 ),
-                onTap: () => _openReaderV5(_filesPaths[i]),
+                onTap: () => _openReaderV6(_filesPaths[i]),
                 title: Text(_filesPaths[i]),
               );
             },
