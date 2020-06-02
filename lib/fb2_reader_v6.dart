@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui';
+import 'dart:convert';
 import 'dart:math' as Math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide RefreshIndicator;
@@ -126,35 +128,12 @@ class FB2Reader extends StatefulWidget {
 class _FB2ReaderState extends State<FB2Reader> {
   final _pageCtr = PageController();
   final Map<int, int> offsetsMap = Map();
-  xml.XmlDocument document;
+  final Map<String, Uint8List> imagesMap = Map();
 
   bool isReady = false;
 
   setOffset(int chapter, int offset) {
     offsetsMap[chapter] = offset;
-  }
-
-  static Future<xml.XmlDocument> replaceImages(xml.XmlDocument document) {
-    final binaries = document.findAllElements('binary');
-
-    document.findAllElements('img').forEach((element) {
-      final id = element.getAttribute('l:href').split('#').last;
-      final binary = binaries.firstWhere((element) {
-        return element.getAttribute('id') == id;
-      });
-
-      if (binary != null) {
-        final str = element
-            .toXmlString()
-            .replaceAll('/>', ' src="data:image/png;base64, ${binary.text}" />');
-
-        final temp = xml.XmlDocument.parse(str).findElements('img').first.copy();
-
-        element.replace(temp);
-      }
-    });
-
-    return Future.value(document);
   }
 
   @override
@@ -163,11 +142,22 @@ class _FB2ReaderState extends State<FB2Reader> {
 
     Future.microtask(() async {
       print('Start: ${DateTime.now()}');
-      final doc = await compute(replaceImages, widget.document);
+      final binaries = widget.document.findAllElements('binary').toList().asMap();
+
+      binaries.forEach((index, element) {
+        String id;
+        try {
+          id = element.attributes.firstWhere((element) => element.name.toString() == 'id').value;
+        } catch (e) {
+          id = index.toString();
+        }
+
+        imagesMap[id] = base64Decode(element.text);
+      });
+
       print('End: ${DateTime.now()}');
 
       setState(() {
-        document = doc;
         isReady = true;
       });
     });
@@ -188,7 +178,7 @@ class _FB2ReaderState extends State<FB2Reader> {
       );
     }
 
-    final sections = document.findAllElements('section').where((section) {
+    final sections = widget.document.findAllElements('section').where((section) {
       return section.innerText.trim().length > 0;
     }).toList();
 
@@ -199,14 +189,8 @@ class _FB2ReaderState extends State<FB2Reader> {
       child: PageView.builder(
         controller: _pageCtr,
         scrollDirection: Axis.vertical,
-        itemBuilder: (_, i) => Chapter(
-          sections[i],
-          i,
-          max,
-          _pageCtr,
-          setOffset,
-          offsetsMap,
-        ),
+        itemBuilder: (_, i) =>
+            Chapter(sections[i], i, max, _pageCtr, setOffset, offsetsMap, imagesMap),
       ),
     );
   }
@@ -226,6 +210,7 @@ class Chapter extends StatefulWidget {
   final PageController pageCtr;
   final void Function(int, int) setOffset;
   final Map<int, int> offsetsMap;
+  final Map<String, Uint8List> imagesMap;
 
   Chapter(
     this.section,
@@ -233,7 +218,8 @@ class Chapter extends StatefulWidget {
     this.max,
     this.pageCtr,
     this.setOffset,
-    this.offsetsMap, {
+    this.offsetsMap,
+    this.imagesMap, {
     Key key,
   }) : super(key: key);
 
@@ -366,7 +352,7 @@ class _ChapterState extends State<Chapter> {
             builder: (ctx, snap) {
               if (snap.hasData) {
                 final num = length > 1 ? snap.data / (length - 1) : 1;
-                return Text(num.toString());
+                return Text(num.toStringAsFixed(3));
               }
 
               return Text('0');
@@ -403,8 +389,6 @@ class _ChapterState extends State<Chapter> {
           ),
           "img": Style(
             alignment: Alignment.center,
-            height: MediaQuery.of(ctx).size.height / 2,
-            backgroundColor: Colors.black12,
             padding: const EdgeInsets.symmetric(horizontal: 10),
           ),
           "p": Style(
@@ -414,21 +398,21 @@ class _ChapterState extends State<Chapter> {
             fontSize: FontSize(store.fontSize),
             whiteSpace: WhiteSpace.PRE,
           ),
-          'i': Style(
-            textAlign: TextAlign.center,
-          ),
-          'strong': Style(
-            textAlign: TextAlign.center,
-          ),
+          'i': Style(textAlign: TextAlign.center),
+          'strong': Style(textAlign: TextAlign.center),
+          "emphasis": Style(fontStyle: FontStyle.italic)
         },
         customRender: {
           "emphasis": (context, child, _, __) {
-            context.style.fontStyle = FontStyle.italic;
             return ContainerSpan(
               newContext: context,
-              style: Style(fontStyle: FontStyle.italic),
               child: child,
             );
+          },
+          'img': (context, child, attributes, __) {
+            final key = attributes['id'];
+
+            return Image.memory(widget.imagesMap[key]);
           }
         },
       ),
