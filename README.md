@@ -1,6 +1,17 @@
 # flutter_fb2_reader
 
-A new Flutter project.
+Flutter project for reading fb2 books
+
+## Roadmap
+
+- [x] Rework xml parsing
+- [x] Add .fb2.zip files support
+- [ ] Animate scroll share in chapter header
+- [ ] Use [flutter_observable_state](https://pub.dev/packages/flutter_observable_state) as state management
+- [ ] Add chapters list
+- [ ] Add reader customization
+- [ ] Add SQLite book storage with meta-info / cover / saved chapter scroll offsets
+- [ ] Do some design work
 
 ## Getting Started
 
