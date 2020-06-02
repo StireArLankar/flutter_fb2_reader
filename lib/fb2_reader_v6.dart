@@ -9,6 +9,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:flutter_html/html_parser.dart';
 import 'package:flutter_html/style.dart';
 
 import 'store/counter.dart';
@@ -135,11 +136,6 @@ class _FB2ReaderState extends State<FB2Reader> {
 
   static Future<xml.XmlDocument> replaceImages(xml.XmlDocument document) {
     final binaries = document.findAllElements('binary');
-
-    document.findAllElements('emphasis').forEach((element) {
-      final str = element.toXmlString().replaceAll('emphasis', 'i');
-      element.replace(xml.XmlDocument.parse(str).findElements('i').first.copy());
-    });
 
     document.findAllElements('img').forEach((element) {
       final id = element.getAttribute('l:href').split('#').last;
@@ -424,6 +420,16 @@ class _ChapterState extends State<Chapter> {
           'strong': Style(
             textAlign: TextAlign.center,
           ),
+        },
+        customRender: {
+          "emphasis": (context, child, _, __) {
+            context.style.fontStyle = FontStyle.italic;
+            return ContainerSpan(
+              newContext: context,
+              style: Style(fontStyle: FontStyle.italic),
+              child: child,
+            );
+          }
         },
       ),
     );
