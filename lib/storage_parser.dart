@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
-
+import 'package:path/path.dart' as p;
+import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:path_provider_ex/path_provider_ex.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:xml/xml.dart' as xml;
@@ -21,7 +23,7 @@ class StorageParser extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(child: PathProviderApp()),
-      appBar: AppBar(title: const Text('Path provider example')),
+      appBar: AppBar(title: const Text('Main screen')),
       drawer: AppDrawer(StorageParser.pathName),
     );
   }
@@ -79,7 +81,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
       builder: (ctx, snapshot) {
         Widget child;
 
-        if (snapshot.hasData) {
+        if (snapshot.hasData && snapshot.data.split('.').last == 'fb2') {
           child = Container(
             width: double.infinity,
             child: Column(
@@ -110,10 +112,49 @@ class _PathProviderAppState extends State<PathProviderApp> {
   void _openFileExplorer() async {
     try {
       setState(() => _parsedPath = null);
-      _parsedPath = FilePicker.getFilePath();
+      _parsedPath = FilePicker.getFilePath().then((value) {
+        if (value.contains('.fb2.zip')) {
+          return _prepareZip(value);
+        }
+
+        return value;
+      });
     } on PlatformException catch (e) {
       print("Unsupported operation" + e.toString());
     }
+  }
+
+  Future<String> _prepareZip(String path) async {
+    try {
+      final bytes = File(path).readAsBytesSync();
+
+      final archive = ZipDecoder().decodeBytes(bytes);
+
+      final tempDirectory = await getTemporaryDirectory();
+
+      for (final file in archive) {
+        final filename = file.name;
+
+        if (file.isFile && filename.split('.').last == 'fb2') {
+          final data = file.content;
+
+          final path = p.join(tempDirectory.path, filename);
+
+          if (!await File(path).exists()) {
+            File(path)
+              ..createSync(recursive: true)
+              ..writeAsBytesSync(data);
+          }
+
+          if (!_filesPaths.contains(path)) {
+            _filesPaths.add(path);
+          }
+
+          setState(() {});
+          return path;
+        }
+      }
+    } catch (e) {}
   }
 
   Future<void> initPlatformState() async {
@@ -127,12 +168,18 @@ class _PathProviderAppState extends State<PathProviderApp> {
     storageInfo.forEach((element) {
       final rootPath = element.rootDir;
       final files = Directory(rootPath).listSync(recursive: true);
-      files.forEach((element) {
+      files.forEach((element) async {
         if (element is File) {
           final name = element.path.split("/")?.last;
+
           print('FileName: $name');
+
           if (name.split('.').last == 'fb2') {
             _filesPaths.add(element.path);
+          }
+
+          if (name.split('.').reversed.take(2).last == 'fb2') {
+            await _prepareZip(element.path);
           }
         }
       });
