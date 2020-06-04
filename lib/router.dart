@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'drawer.dart';
-import 'fb2_picker.dart';
 import 'fb2_reader.dart';
-import 'fb2_reader_v2.dart';
-import 'fb2_reader_v3.dart';
-import 'fb2_reader_v4.dart';
-import 'fb2_reader_v5.dart';
-import 'fb2_reader_v6.dart';
 import 'file_reader.dart';
 import 'file_saver.dart';
 import 'path_provider.dart';
@@ -26,32 +20,11 @@ Route<dynamic> generateRoutes(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => PathProviderScreenV2());
     case FileSaverScreen.pathName:
       return MaterialPageRoute(builder: (_) => FileSaverScreen());
-    case FB2PickerScreen.pathName:
-      return MaterialPageRoute(builder: (_) => FB2PickerScreen());
     case FB2ReaderScreen.pathName:
       return MaterialPageRoute(
         builder: (_) => FB2ReaderScreen(settings.arguments),
       );
-    case FB2ReaderScreenV2.pathName:
-      return MaterialPageRoute(
-        builder: (_) => FB2ReaderScreenV2(settings.arguments),
-      );
-    case FB2ReaderScreenV3.pathName:
-      return MaterialPageRoute(
-        builder: (_) => FB2ReaderScreenV3(settings.arguments),
-      );
-    case FB2ReaderScreenV4.pathName:
-      return MaterialPageRoute(
-        builder: (_) => FB2ReaderScreenV4(settings.arguments),
-      );
-    case FB2ReaderScreenV5.pathName:
-      return MaterialPageRoute(
-        builder: (_) => FB2ReaderScreenV5(settings.arguments),
-      );
-    case FB2ReaderScreenV6.pathName:
-      return MaterialPageRoute(
-        builder: (_) => FB2ReaderScreenV6(settings.arguments),
-      );
+
     default:
       return MaterialPageRoute(builder: (_) => DefaultScreen(settings.name));
   }

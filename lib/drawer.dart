@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'fb2_picker.dart';
 import 'file_reader.dart';
 import 'file_saver.dart';
 import 'path_provider.dart';
@@ -13,7 +12,6 @@ final routesArray = const [
   PathProviderScreen.pathName,
   PathProviderScreenV2.pathName,
   FileSaverScreen.pathName,
-  FB2PickerScreen.pathName,
 ];
 
 class AppDrawer extends StatelessWidget {

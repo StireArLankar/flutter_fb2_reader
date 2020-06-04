@@ -12,7 +12,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:xml/xml.dart' as xml;
 
 import 'drawer.dart';
-import 'fb2_reader_v6.dart';
+import 'fb2_reader.dart';
 
 const bold = const TextStyle(fontWeight: FontWeight.bold);
 
@@ -151,10 +151,12 @@ class _PathProviderAppState extends State<PathProviderApp> {
           }
 
           setState(() {});
-          return path;
+          return Future.value(path);
         }
       }
     } catch (e) {}
+
+    return Future.value(null);
   }
 
   Future<void> initPlatformState() async {
@@ -206,7 +208,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
   void _openReaderV6(String path) async {
     final document = await _openFile(path);
     Navigator.of(context).pushNamed(
-      FB2ReaderScreenV6.pathName,
+      FB2ReaderScreen.pathName,
       arguments: document,
     );
   }
