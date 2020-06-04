@@ -13,6 +13,7 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_html/html_parser.dart';
 import 'package:flutter_html/style.dart';
+import 'img_placehoder.dart';
 
 import 'store/counter.dart';
 
@@ -147,12 +148,17 @@ class _FB2ReaderState extends State<FB2Reader> {
       binaries.forEach((index, element) {
         String id;
         try {
-          id = element.attributes.firstWhere((element) => element.name.toString() == 'id').value;
+          id = '#' +
+              element.attributes.firstWhere((element) => element.name.toString() == 'id').value;
         } catch (e) {
-          id = index.toString();
+          id = '#' + index.toString();
         }
 
-        imagesMap[id] = base64Decode(element.text);
+        try {
+          imagesMap[id] = base64Decode(element.text.trim());
+        } catch (e) {
+          imagesMap[id] = base64Decode(placeholder);
+        }
       });
 
       print('End: ${DateTime.now()}');
@@ -189,8 +195,15 @@ class _FB2ReaderState extends State<FB2Reader> {
       child: PageView.builder(
         controller: _pageCtr,
         scrollDirection: Axis.vertical,
-        itemBuilder: (_, i) =>
-            Chapter(sections[i], i, max, _pageCtr, setOffset, offsetsMap, imagesMap),
+        itemBuilder: (_, i) => Chapter(
+          sections[i],
+          i,
+          max,
+          _pageCtr,
+          setOffset,
+          offsetsMap,
+          imagesMap,
+        ),
       ),
     );
   }
@@ -237,10 +250,6 @@ class _ChapterState extends State<Chapter> {
   void initState() {
     super.initState();
     itemPositionsListener.itemPositions.addListener(() {
-      // print('---');
-      // itemPositionsListener.itemPositions.value.forEach(print);
-      // print('---');
-
       final values = itemPositionsListener.itemPositions.value.map((el) => el.index).toList();
       values.sort();
 
@@ -346,7 +355,14 @@ class _ChapterState extends State<Chapter> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          Text(title),
+          SizedBox(
+            child: FittedBox(
+              child: Text(title),
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+            ),
+            width: MediaQuery.of(context).size.width / 2,
+          ),
           StreamBuilder<int>(
             stream: temp.stream,
             builder: (ctx, snap) {
@@ -404,15 +420,15 @@ class _ChapterState extends State<Chapter> {
         },
         customRender: {
           "emphasis": (context, child, _, __) {
-            return ContainerSpan(
-              newContext: context,
-              child: child,
-            );
+            return ContainerSpan(newContext: context, child: child);
           },
           'img': (context, child, attributes, __) {
-            final key = attributes['id'];
-
-            return Image.memory(widget.imagesMap[key]);
+            final key = attributes['l:href'];
+            try {
+              return Image.memory(widget.imagesMap[key]);
+            } catch (e) {
+              return Image.memory(base64Decode(placeholder));
+            }
           }
         },
       ),
