@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'file_reader.dart';
-import 'file_saver.dart';
 import 'path_provider.dart';
 import 'path_provider_v2.dart';
 import 'storage_parser.dart';
@@ -11,7 +10,6 @@ final routesArray = const [
   FileReaderScreen.pathName,
   PathProviderScreen.pathName,
   PathProviderScreenV2.pathName,
-  FileSaverScreen.pathName,
 ];
 
 class AppDrawer extends StatelessWidget {
@@ -24,10 +22,10 @@ class AppDrawer extends StatelessWidget {
 
   AppDrawer._internal(this.routes);
 
-  Widget buildLink(BuildContext context, String title, String route) {
+  Widget buildLink(BuildContext context, String route) {
     return ListTile(
       leading: const Icon(Icons.panorama_fish_eye),
-      title: Text(title),
+      title: Text(route),
       onTap: () => Navigator.of(context).pushReplacementNamed(route),
     );
   }
@@ -47,7 +45,7 @@ class AppDrawer extends StatelessWidget {
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
-                  children: routes.map((item) => buildLink(ctx, item, item)).toList(),
+                  children: routes.map((item) => buildLink(ctx, item)).toList(),
                 ),
               ),
             ),

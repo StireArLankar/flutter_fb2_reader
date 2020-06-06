@@ -89,7 +89,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
               children: <Widget>[
                 Text(snapshot.data),
                 RaisedButton(
-                  onPressed: () => _openReaderV6(snapshot.data),
+                  onPressed: () => _openReader(snapshot.data),
                   child: Text("Open file"),
                 ),
               ],
@@ -205,7 +205,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
     return res;
   }
 
-  void _openReaderV6(String path) async {
+  void _openReader(String path) async {
     final document = await _openFile(path);
     Navigator.of(context).pushNamed(
       FB2ReaderScreen.pathName,
@@ -237,7 +237,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
                 leading: CircleAvatar(
                   child: Text('$i'),
                 ),
-                onTap: () => _openReaderV6(_filesPaths[i]),
+                onTap: () => _openReader(_filesPaths[i]),
                 title: Text(_filesPaths[i]),
               );
             },

@@ -20,6 +20,7 @@ import 'store/actions.dart';
 
 class FB2ReaderScreen extends StatelessWidget {
   static const String pathName = 'fb2-reader';
+
   final _state = getIt.get<AppState>();
 
   final xml.XmlDocument document;
@@ -29,22 +30,16 @@ class FB2ReaderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: FB2Reader(document),
-      ),
+      body: Center(child: FB2Reader(document)),
       appBar: AppBar(
         title: const Text('FB2 reader'),
         actions: <Widget>[
           Builder(
-            builder: (ctx) {
-              return IconButton(
-                icon: Icon(Icons.network_cell),
-                onPressed: () {
-                  _showMyDialog(ctx);
-                },
-              );
-            },
-          )
+            builder: (ctx) => IconButton(
+              icon: Icon(Icons.network_cell),
+              onPressed: () => _showMyDialog(ctx),
+            ),
+          ),
         ],
       ),
     );
@@ -53,7 +48,7 @@ class FB2ReaderScreen extends StatelessWidget {
   Future<void> _showMyDialog(context) async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // user must tap button!
+      barrierDismissible: false,
       builder: (ctx) => Dia(val: _state.fontSize.get()),
     );
   }
@@ -76,10 +71,8 @@ class _DiaState extends State<Dia> {
   @override
   void initState() {
     super.initState();
-    print(widget.val);
-    setState(() {
-      value = widget.val;
-    });
+
+    setState(() => value = widget.val);
   }
 
   @override

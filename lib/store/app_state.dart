@@ -15,6 +15,7 @@ class AppState {
         fontSize.change((_) => 14.0);
         prefs.setDouble('fontSize', 14.0);
       }
+
       isInitialized.change((_) => true);
     });
   }

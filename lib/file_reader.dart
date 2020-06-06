@@ -73,9 +73,8 @@ class _FilePickerDemoState extends State<FilePickerDemo> {
 
     setState(() {
       _loadingPath = false;
-      _fileName = _path != null
-          ? _path.split('/').last
-          : _paths != null ? _paths.keys.toString() : '...';
+      _fileName =
+          _path != null ? _path.split('/').last : _paths != null ? _paths.keys.toString() : '...';
     });
   }
 
@@ -84,9 +83,9 @@ class _FilePickerDemoState extends State<FilePickerDemo> {
       Scaffold.of(context).showSnackBar(
         SnackBar(
           backgroundColor: result ? Colors.green : Colors.red,
-          content: Text((result
-              ? 'Temporary files removed with success.'
-              : 'Failed to clean temporary files')),
+          content: Text(
+            result ? 'Temporary files removed with success.' : 'Failed to clean temporary files',
+          ),
         ),
       );
     });
@@ -149,8 +148,7 @@ class _FilePickerDemoState extends State<FilePickerDemo> {
                         maxLength: 15,
                         autovalidate: true,
                         controller: _controller,
-                        decoration:
-                            InputDecoration(labelText: 'File extension'),
+                        decoration: InputDecoration(labelText: 'File extension'),
                         keyboardType: TextInputType.text,
                         textCapitalization: TextCapitalization.none,
                       )
@@ -163,9 +161,7 @@ class _FilePickerDemoState extends State<FilePickerDemo> {
                     'Pick multiple files',
                     textAlign: TextAlign.right,
                   ),
-                  onChanged: (bool value) {
-                    setState(() => _multiPick = value);
-                  },
+                  onChanged: (val) => setState(() => _multiPick = val),
                   value: _multiPick,
                 ),
               ),
@@ -193,12 +189,9 @@ class _FilePickerDemoState extends State<FilePickerDemo> {
                             height: MediaQuery.of(context).size.height * 0.50,
                             child: Scrollbar(
                               child: ListView.separated(
-                                itemCount: _paths != null && _paths.isNotEmpty
-                                    ? _paths.length
-                                    : 1,
+                                itemCount: _paths != null && _paths.isNotEmpty ? _paths.length : 1,
                                 itemBuilder: (_, index) {
-                                  final bool isMultiPath =
-                                      _paths != null && _paths.isNotEmpty;
+                                  final bool isMultiPath = _paths != null && _paths.isNotEmpty;
                                   final String name = 'File $index: ' +
                                       (isMultiPath
                                           ? _paths.keys.toList()[index]
