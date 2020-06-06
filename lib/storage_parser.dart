@@ -13,6 +13,10 @@ import 'package:xml/xml.dart' as xml;
 
 import 'drawer.dart';
 import 'fb2_reader.dart';
+import 'pages/book_description.dart';
+import 'store/actions.dart';
+import 'store/app_state.dart';
+import 'store/services.dart';
 
 const bold = const TextStyle(fontWeight: FontWeight.bold);
 
@@ -40,6 +44,9 @@ class _PathProviderAppState extends State<PathProviderApp> {
   String _sharedText = '';
   Future<String> _parsedPath;
   StreamSubscription _subscription;
+
+  final _state = getIt.get<AppState>();
+  final _actions = getIt.get<ActionS>();
 
   void updateState(String str) {
     setState(() {
@@ -91,6 +98,10 @@ class _PathProviderAppState extends State<PathProviderApp> {
                 RaisedButton(
                   onPressed: () => _openReader(snapshot.data),
                   child: Text("Open file"),
+                ),
+                RaisedButton(
+                  onPressed: () => _openDescription(snapshot.data),
+                  child: Text("Open description"),
                 ),
               ],
             ),
@@ -211,6 +222,12 @@ class _PathProviderAppState extends State<PathProviderApp> {
       FB2ReaderScreen.pathName,
       arguments: document,
     );
+  }
+
+  void _openDescription(String path) {
+    _actions.setOpenedDescription(path);
+
+    Navigator.of(context).pushNamed(BookDescription.pathName);
   }
 
   @override
