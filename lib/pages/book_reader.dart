@@ -172,6 +172,19 @@ class _ChapterState extends State<Chapter> {
     super.initState();
     itemPositionsListener.itemPositions.addListener(() {
       final values = itemPositionsListener.itemPositions.value.map((el) => el.index).toList();
+      // TODO send leading edge position
+      // print('---');
+      // print(itemPositionsListener.itemPositions.value.last);
+      // print('---');
+
+      if (values.indexOf(0) > -1) {
+        return temp.add(0);
+      }
+
+      if (length > 0 && values.indexOf(length - 1) > -1) {
+        return temp.add(length - 1);
+      }
+
       values.sort();
 
       int tmp = 0;
@@ -191,7 +204,18 @@ class _ChapterState extends State<Chapter> {
     super.dispose();
     temp.close();
 
-    final val = itemPositionsListener.itemPositions.value.fold<int>(
+    final values = itemPositionsListener.itemPositions.value;
+    final list = values.map((el) => el.index).toList();
+
+    if (list.indexOf(0) > -1) {
+      return widget.setOffset(widget.index, 0);
+    }
+
+    if (length > 0 && list.indexOf(length - 1) > -1) {
+      return widget.setOffset(widget.index, length - 1);
+    }
+
+    final val = values.fold<int>(
       length,
       (previousValue, element) => element.index < previousValue ? element.index : previousValue,
     );
@@ -221,11 +245,12 @@ class _ChapterState extends State<Chapter> {
 
     int offset = 0;
     length = children.length;
-    print(length);
 
     try {
       offset = widget.offsetsMap[widget.index] ?? 0;
     } catch (e) {}
+
+    print('Length: $length, Offset: $offset, ${offset == length - 1}');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -255,6 +280,7 @@ class _ChapterState extends State<Chapter> {
               itemScrollController: _itemScrollController,
               itemPositionsListener: itemPositionsListener,
               initialScrollIndex: offset,
+              initialAlignment: offset == length - 1 ? 0.9 : 0,
               physics: BouncingScrollPhysics(),
             ),
           ),
@@ -339,6 +365,7 @@ class _ChapterState extends State<Chapter> {
           'img': (context, child, attributes, __) {
             final key = attributes['l:href'];
             try {
+              if (widget.imagesMap[key] == null) throw Error();
               return Image.memory(widget.imagesMap[key]);
             } catch (e) {
               return Image.asset('assets/placeholder.png');

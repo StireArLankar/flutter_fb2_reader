@@ -12,7 +12,6 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_html/html_parser.dart';
 import 'package:flutter_html/style.dart';
-import 'img_placehoder.dart';
 
 import 'store/app_state.dart';
 import 'store/services.dart';
@@ -147,9 +146,7 @@ class _FB2ReaderState extends State<FB2Reader> {
 
         try {
           imagesMap[id] = base64Decode(element.text.trim());
-        } catch (e) {
-          imagesMap[id] = base64Decode(placeholder);
-        }
+        } catch (e) {}
       });
 
       print('End: ${DateTime.now()}');
@@ -416,9 +413,10 @@ class _ChapterState extends State<Chapter> {
           'img': (context, child, attributes, __) {
             final key = attributes['l:href'];
             try {
+              if (widget.imagesMap[key] == null) throw Error();
               return Image.memory(widget.imagesMap[key]);
             } catch (e) {
-              return Image.memory(base64Decode(placeholder));
+              return Image.asset('assets/placeholder');
             }
           }
         },
