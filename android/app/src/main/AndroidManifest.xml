@@ -27,7 +27,11 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
                 <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.fb2" />
+                <data android:pathPattern=".*\\.fb2.zip" />
+                <data android:host="*" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
