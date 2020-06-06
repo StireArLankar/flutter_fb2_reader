@@ -2,7 +2,6 @@ import 'package:flutter_observable_state/flutter_observable_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:xml/xml.dart' as xml;
 import 'dart:typed_data';
 
 Future<void> onCreate(Database db, int version) async {
@@ -16,16 +15,6 @@ Future<void> onCreate(Database db, int version) async {
     await txn.execute(
       'CREATE TABLE Test (path TEXT PRIMARY KEY, filename TEXT, description TEXT, content TEXT, cover BLOB, modified TEXT)',
     );
-  });
-}
-
-Future<Database> openDB() async {
-  var databasesPath = await getDatabasesPath();
-  String path = join(databasesPath, 'demo.db');
-
-  return openDatabase(path, version: 1, onCreate: onCreate).then((value) {
-    print('Opened DB');
-    return value;
   });
 }
 
@@ -43,7 +32,7 @@ class ParsedBook {
   final Map<String, Uint8List> imagesMap;
   final Map<int, int> offsetsMap;
   final String content;
-  final Uint8List cover;
+  final Uint8List preview;
 
   ParsedBook(
     this.title,
@@ -51,7 +40,7 @@ class ParsedBook {
     this.imagesMap,
     this.offsetsMap,
     this.content,
-    this.cover,
+    this.preview,
   );
 }
 
@@ -87,6 +76,8 @@ class AppState {
       print('Opened DB');
       return value;
     });
+
+    return;
   }
 
   AppState() {

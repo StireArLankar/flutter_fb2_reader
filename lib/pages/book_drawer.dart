@@ -18,11 +18,13 @@ class BookDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext ctx) {
+    final img = preview != null ? Image.memory(preview) : Image.asset('assets/placeholder.png');
+
     return Drawer(
       child: SafeArea(
         child: Column(
           children: <Widget>[
-            Container(child: Image.memory(preview), width: 100),
+            Container(child: img, width: 200),
             const SizedBox(height: 5),
             Text(
               title,

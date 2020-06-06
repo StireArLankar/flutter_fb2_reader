@@ -28,7 +28,7 @@ class _BookReaderState extends State<BookReader> {
 
   String title;
   Map<String, Uint8List> imagesMap;
-  Uint8List cover;
+  Uint8List preview;
   Map<int, int> offsetsMap;
   List<xml.XmlNode> sections;
   List<String> titles;
@@ -40,7 +40,7 @@ class _BookReaderState extends State<BookReader> {
 
     title = book.title;
     imagesMap = book.imagesMap;
-    cover = book.cover;
+    preview = book.preview;
     offsetsMap = book.offsetsMap;
 
     final parsed = xml.XmlDocument.parse(book.content);
@@ -79,7 +79,7 @@ class _BookReaderState extends State<BookReader> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: buildReader(),
-      drawer: BookDrawer(cover, titles, onTitleClick, title),
+      drawer: BookDrawer(preview, titles, onTitleClick, title),
       appBar: AppBar(
         title: Text(title),
         actions: <Widget>[

@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:archive/archive.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'app_state.dart';
@@ -8,6 +10,9 @@ import 'package:xml/xml.dart' as xml;
 import 'dart:typed_data';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:ui';
+import 'dart:math' as Math;
+import 'dart:async';
 
 Future<String> _prepareZip(String path) async {
   try {
@@ -69,14 +74,39 @@ Future<ParsedDescription> _parseBookDescription(String path) async {
       return res;
     });
 
-    // TODO Compress
-    // static double dblScreenHeight = window.physicalSize.height / window.devicePixelRatio;
-    // static double dblScreenWidth = window.physicalSize.width / window.devicePixelRatio;
-
     cover = base64Decode(binary.text.trim());
   } catch (e) {}
 
   return Future.value(ParsedDescription(path, desc.toXmlString(), cover));
+}
+
+Future<Uint8List> compressImage(Uint8List list, int maxSize) async {
+  final img = await decodeImageFromList(list);
+
+  print('Size - $maxSize, Preview width - ${img.width}, Preview height - ${img.height}');
+
+  final minSize = Math.min(img.width, maxSize);
+
+  if (img.width > minSize) {
+    list = await instantiateImageCodec(
+      list,
+      targetWidth: minSize,
+    )
+        .then((c) => c.getNextFrame())
+        .then((f) => f.image.toByteData(format: ImageByteFormat.png))
+        .then((v) => v.buffer.asUint8List());
+  }
+
+  final imgResized = await decodeImageFromList(list);
+
+  print('Resized - Preview width - ${imgResized.width}, Preview height - ${imgResized.height}');
+
+  final result = await FlutterImageCompress.compressWithList(list, quality: 70);
+
+  print('InitialLength: ${list.length}, CompressedLength: ${result.length}');
+  print('---');
+
+  return Uint8List.fromList(result);
 }
 
 Future<ParsedBook> _parseBook(String path) async {
@@ -93,22 +123,34 @@ Future<ParsedBook> _parseBook(String path) async {
 
   final Map<String, Uint8List> imagesMap = {};
 
-  try {
-    final binaries = document.findAllElements('binary').toList().asMap();
+  final pixelWidth = (window.physicalSize.width / window.devicePixelRatio).round();
+  final pixelHeight = (window.physicalSize.height / window.devicePixelRatio).round();
+  final maxSize = Math.max(pixelWidth, pixelHeight);
 
-    binaries.forEach((index, element) {
-      final elementId = element.getAttribute('id') ?? index.toString();
+  try {
+    final binaries = document.findAllElements('binary');
+    var temp = 0;
+
+    await Future.forEach(binaries, (element) async {
+      temp++;
+      final elementId = element.getAttribute('id') ?? temp.toString();
       final id = '#' + elementId;
 
       try {
-        imagesMap[id] = base64Decode(element.text.trim());
+        final decoded = base64Decode(element.text.trim());
+        final img = await compressImage(decoded, maxSize);
+
+        imagesMap[id] = img;
+        return;
       } catch (e) {}
     });
   } catch (e) {}
 
   final coverpage = desc.findAllElements('coverpage').first;
   final coverId = coverpage.getElement('image').getAttribute('l:href');
-  final cover = imagesMap[coverId];
+
+  print('Preview compressing');
+  final preview = await compressImage(imagesMap[coverId], 200);
 
   final Map<int, int> offsetsMap = {};
 
@@ -130,7 +172,7 @@ Future<ParsedBook> _parseBook(String path) async {
       }).join('') +
       '</body>';
 
-  return Future.value(ParsedBook(title, path, imagesMap, offsetsMap, finalBody, cover));
+  return Future.value(ParsedBook(title, path, imagesMap, offsetsMap, finalBody, preview));
 }
 
 class ActionS {
@@ -144,20 +186,20 @@ class ActionS {
     } catch (e) {}
   }
 
-  void setOpenedDescription(String path) async {
+  Future<void> setOpenedDescription(String path) async {
     final res = await _parseBookDescription(path);
 
-    _state.openedDescription.change((_) => res);
+    return _state.openedDescription.change((_) => res);
   }
 
   void clearOpenedDescription() {
     _state.openedDescription.change((_) => null);
   }
 
-  void setOpenedBook(String path) async {
+  Future<void> setOpenedBook(String path) async {
     final res = await _parseBook(path);
 
-    _state.openedBook.change((_) => res);
+    return _state.openedBook.change((_) => res);
   }
 
   void clearOpenedBook() {
