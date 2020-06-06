@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'dart:math' as Math;
 import 'package:flutter/material.dart';
+import 'package:flutter_fb2_reader/pages/book_drawer.dart';
 import 'package:flutter_observable_state/flutter_observable_state.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:xml/xml.dart' as xml;
@@ -69,13 +70,25 @@ class _BookReaderState extends State<BookReader> {
     }).toList();
   }
 
+  void onTitleClick(BuildContext ctx, int index) {
+    _pageCtr.jumpToPage(index);
+    Navigator.of(ctx).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: buildReader(),
+      drawer: BookDrawer(cover, titles, onTitleClick, title),
       appBar: AppBar(
         title: Text(title),
         actions: <Widget>[
+          Builder(
+            builder: (ctx) => IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () => Navigator.of(ctx).pop(),
+            ),
+          ),
           Builder(
             builder: (ctx) => IconButton(
               icon: Icon(Icons.settings),
@@ -97,6 +110,7 @@ class _BookReaderState extends State<BookReader> {
     return PageView.builder(
       controller: _pageCtr,
       scrollDirection: Axis.vertical,
+      itemCount: sections.length,
       itemBuilder: (_, i) => Chapter(
         sections[i],
         titles[i],

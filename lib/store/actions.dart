@@ -69,6 +69,10 @@ Future<ParsedDescription> _parseBookDescription(String path) async {
       return res;
     });
 
+    // TODO Compress
+    // static double dblScreenHeight = window.physicalSize.height / window.devicePixelRatio;
+    // static double dblScreenWidth = window.physicalSize.width / window.devicePixelRatio;
+
     cover = base64Decode(binary.text.trim());
   } catch (e) {}
 
