@@ -47,7 +47,7 @@ Info getInfo(String desc) {
   } catch (e) {}
 
   try {
-    res.title = info.getElement('title').text;
+    res.title = info.getElement('book-title').text;
   } catch (e) {}
 
   try {

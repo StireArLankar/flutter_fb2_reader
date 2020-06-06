@@ -37,12 +37,32 @@ class ParsedDescription {
   ParsedDescription(this.path, this.description, this.cover);
 }
 
+class ParsedBook {
+  final String title;
+  final String path;
+  final Map<String, Uint8List> imagesMap;
+  final Map<int, int> offsetsMap;
+  final String content;
+  final Uint8List cover;
+
+  ParsedBook(
+    this.title,
+    this.path,
+    this.imagesMap,
+    this.offsetsMap,
+    this.content,
+    this.cover,
+  );
+}
+
 class AppState {
   final isInitialized = Observable(false);
 
   final fontSize = Observable(14.0);
 
   final openedDescription = Observable<ParsedDescription>(null);
+
+  final openedBook = Observable<ParsedBook>(null);
 
   Database db;
 

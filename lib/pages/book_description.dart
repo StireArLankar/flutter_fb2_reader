@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_fb2_reader/pages/book_reader.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:flutter_html/html_parser.dart';
+import 'package:flutter_html/style.dart';
+import 'package:flutter_observable_state/flutter_observable_state.dart';
+
+import '../store/actions.dart';
 import '../store/app_state.dart';
 import '../store/services.dart';
-import 'package:flutter_observable_state/flutter_observable_state.dart';
 import 'book_description.utils.dart';
-import 'package:flutter_html/flutter_html.dart';
-import 'package:flutter_html/style.dart';
-import 'package:flutter_html/html_parser.dart';
 
 class BookDescription extends StatelessWidget {
   static const String pathName = 'book_description';
 
   final _state = getIt.get<AppState>();
+  final _actions = getIt.get<ActionS>();
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +38,7 @@ class BookDescription extends StatelessWidget {
                   : Image.memory(content.cover),
               RaisedButton(
                 child: Text('Open reader'),
-                onPressed: () {},
+                onPressed: () => _openReader(context),
               ),
               _buildAuthors(info),
               _buildGenres(info),
@@ -48,6 +52,11 @@ class BookDescription extends StatelessWidget {
         );
       }),
     );
+  }
+
+  void _openReader(BuildContext ctx) {
+    _actions.setOpenedBook(_state.openedDescription.get().path);
+    Navigator.pushNamed(ctx, BookReader.pathName);
   }
 
   Widget _buildAuthors(Info info) {
