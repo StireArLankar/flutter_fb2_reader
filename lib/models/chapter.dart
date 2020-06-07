@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class ChapterModel {
   double progress;
   int leadingIndex;
@@ -11,11 +13,11 @@ class ChapterModel {
     leadingOffset = json['leadingOffset'];
   }
 
-  Map<String, dynamic> toJson() {
+  String toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['progress'] = this.progress;
     data['leadingIndex'] = this.leadingIndex;
     data['leadingOffset'] = this.leadingOffset;
-    return data;
+    return json.encode(data);
   }
 }

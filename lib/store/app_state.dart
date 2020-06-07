@@ -32,6 +32,7 @@ Future<void> onOpen(Database db) async {
         "modified TEXT,"
         "opened TEXT,"
         "chapters TEXT,"
+        "currentChapter INTEGER,"
         "title TEXT"
         ")");
   });

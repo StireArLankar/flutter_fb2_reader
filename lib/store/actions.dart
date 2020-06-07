@@ -60,6 +60,7 @@ Future<Tuple2<BookModel, Map<String, Uint8List>>> _prepareBook(String path) asyn
     modified: modified.toIso8601String(),
     opened: opened.toIso8601String(),
     chapters: chapters,
+    currentChapter: 0,
     title: title,
   );
 
@@ -123,72 +124,6 @@ Future<Uint8List> compressImage(Uint8List list, int maxSize) async {
   print('---');
 
   return Uint8List.fromList(result);
-}
-
-Future<ParsedBook> _parseBook(String path) async {
-  if (path.split('/').last == 'zip') {
-    path = await _prepareZip(path);
-  }
-
-  final file = File(path);
-  final contents = await file.readAsString();
-  final document = xml.XmlDocument.parse(contents);
-
-  final desc = document.findAllElements('description').first;
-  final title = desc.getElement('title-info').getElement('book-title').text;
-
-  final Map<String, Uint8List> imagesMap = {};
-
-  final pixelWidth = (window.physicalSize.width / window.devicePixelRatio).round();
-  final pixelHeight = (window.physicalSize.height / window.devicePixelRatio).round();
-  final maxSize = Math.max(pixelWidth, pixelHeight);
-
-  try {
-    final binaries = document.findAllElements('binary');
-    var temp = 0;
-
-    await Future.forEach(binaries, (element) async {
-      temp++;
-      final elementId = element.getAttribute('id') ?? temp.toString();
-      final id = '#' + elementId;
-
-      try {
-        final decoded = base64Decode(element.text.trim());
-        final img = await compressImage(decoded, maxSize);
-
-        imagesMap[id] = img;
-        return;
-      } catch (e) {}
-    });
-  } catch (e) {}
-
-  final coverpage = desc.findAllElements('coverpage').first;
-  final coverId = coverpage.getElement('image').getAttribute('l:href');
-
-  print('Preview compressing');
-  final preview = await compressImage(imagesMap[coverId], 200);
-
-  final Map<int, ChapterModel> offsetsMap = {};
-
-  final finalBody = '<body>' +
-      document.findAllElements('body').map((body) {
-        // TODO asd
-        // final sections = body.findElements('section');
-        // final childrenLength = body.children.length;
-
-        // if (sections.length != childrenLength) {
-        //   body.children.forEach((child) {
-        //     if (true) {
-        //       return child.;
-        //     }
-        //   });
-        // }
-
-        return body.innerXml.replaceAll('<image', '<img').replaceAll(RegExp(r">\s+<"), '><').trim();
-      }).join('') +
-      '</body>';
-
-  return Future.value(ParsedBook(title, path, imagesMap, offsetsMap, finalBody, preview));
 }
 
 Future<void> addToDB(
@@ -347,12 +282,6 @@ class ActionS {
     _state.openedDescription.change((_) => null);
   }
 
-  Future<void> setOpenedBook(String path) async {
-    final res = await _parseBook(path);
-
-    return _state.openedBook.change((_) => res);
-  }
-
   void clearOpenedBook() {
     _state.openedBook.change((_) => null);
   }
@@ -402,5 +331,24 @@ class ActionS {
     _updateDescription(res.item1, true);
 
     await openBook(path, res);
+  }
+
+  Future<void> updateBookChapters(int currentChapter) async {
+    final book = _state.openedBook.get();
+    final path = book.path;
+    final chapters = book.offsetsMap.map((key, value) => MapEntry(key.toString(), value.toJson()));
+
+    print('Update chapters: $chapters');
+    print(chapters.runtimeType);
+    print(chapters["0"].runtimeType);
+
+    _state.db.update(
+      tableBooks,
+      {'chapters': json.encode(chapters), 'currentChapter': currentChapter},
+      where: "path = ?",
+      whereArgs: [path],
+    );
+
+    print('Updated chapters');
   }
 }

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import '../store/actions.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_html/html_parser.dart';
 import 'package:flutter_html/style.dart';
@@ -26,14 +27,22 @@ class BookReader extends StatefulWidget {
 
 class _BookReaderState extends State<BookReader> {
   final _state = getIt.get<AppState>();
-  final _pageCtr = PageController();
+  final _actions = getIt.get<ActionS>();
+  PageController _pageCtr;
 
   String title;
   Map<String, Uint8List> imagesMap;
   Uint8List preview;
   Map<int, ChapterModel> offsetsMap;
+  int currentChapter;
   List<xml.XmlNode> sections;
   List<String> titles;
+
+  @override
+  void dispose() {
+    _actions.updateBookChapters(currentChapter);
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -44,6 +53,10 @@ class _BookReaderState extends State<BookReader> {
     imagesMap = book.imagesMap;
     preview = book.preview;
     offsetsMap = book.offsetsMap;
+    currentChapter = book.currentChapter;
+
+    _pageCtr = PageController(initialPage: currentChapter)
+      ..addListener(() => currentChapter = _pageCtr.page.toInt());
 
     final parsed = xml.XmlDocument.parse(book.content);
 
