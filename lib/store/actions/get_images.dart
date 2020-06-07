@@ -44,7 +44,7 @@ Future<Tuple3<Uint8List, Uint8List, Map<String, Uint8List>>> getImages(
     final coverpage = desc.findAllElements('coverpage').first;
     final coverId = coverpage.getElement('image').getAttribute('l:href');
 
-    print('Preview compressing');
+    // print('Preview compressing');
     final preview = await compressImage(imagesMap[coverId], 200);
 
     return Tuple3(preview, imagesMap[coverId], imagesMap);
@@ -57,7 +57,7 @@ Future<Tuple3<Uint8List, Uint8List, Map<String, Uint8List>>> getImages(
 Future<Uint8List> compressImage(Uint8List list, int maxSize) async {
   final img = await decodeImageFromList(list);
 
-  print('Size - $maxSize, Preview width - ${img.width}, Preview height - ${img.height}');
+  // print('Size - $maxSize, Preview width - ${img.width}, Preview height - ${img.height}');
 
   final minSize = Math.min(img.width, maxSize);
 
@@ -71,14 +71,14 @@ Future<Uint8List> compressImage(Uint8List list, int maxSize) async {
         .then((v) => v.buffer.asUint8List());
   }
 
-  final imgResized = await decodeImageFromList(list);
+  // final imgResized = await decodeImageFromList(list);
 
-  print('Resized - Preview width - ${imgResized.width}, Preview height - ${imgResized.height}');
+  // print('Resized - Preview width - ${imgResized.width}, Preview height - ${imgResized.height}');
 
   final result = await FlutterImageCompress.compressWithList(list, quality: 70);
 
-  print('InitialLength: ${list.length}, CompressedLength: ${result.length}');
-  print('---');
+  // print('InitialLength: ${list.length}, CompressedLength: ${result.length}');
+  // print('---');
 
   return Uint8List.fromList(result);
 }

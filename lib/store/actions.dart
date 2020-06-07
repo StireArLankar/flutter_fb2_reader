@@ -1,14 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as Math;
 import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:archive/archive.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_fb2_reader/store/actions/get_images.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,10 +11,12 @@ import 'package:sqflite/sqflite.dart';
 import 'package:tuple/tuple.dart';
 import 'package:xml/xml.dart' as xml;
 
+import '../models/book.dart';
 import '../models/chapter.dart';
 import '../models/parsed_book.dart';
 import '../models/parsed_description.dart';
-import '../models/book.dart';
+import '../models/parsed_preview.dart';
+import '../store/actions/get_images.dart';
 import 'app_state.dart';
 import 'services.dart';
 
@@ -92,41 +89,14 @@ Future<String> _prepareZip(String path) async {
         return Future.value(cachePath);
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    print('Failder to cache zip file');
+  }
 
   return Future.value(null);
 }
 
-Future<Uint8List> compressImage(Uint8List list, int maxSize) async {
-  final img = await decodeImageFromList(list);
-
-  print('Size - $maxSize, Preview width - ${img.width}, Preview height - ${img.height}');
-
-  final minSize = Math.min(img.width, maxSize);
-
-  if (img.width > minSize) {
-    list = await instantiateImageCodec(
-      list,
-      targetWidth: minSize,
-    )
-        .then((c) => c.getNextFrame())
-        .then((f) => f.image.toByteData(format: ImageByteFormat.png))
-        .then((v) => v.buffer.asUint8List());
-  }
-
-  final imgResized = await decodeImageFromList(list);
-
-  print('Resized - Preview width - ${imgResized.width}, Preview height - ${imgResized.height}');
-
-  final result = await FlutterImageCompress.compressWithList(list, quality: 70);
-
-  print('InitialLength: ${list.length}, CompressedLength: ${result.length}');
-  print('---');
-
-  return Uint8List.fromList(result);
-}
-
-Future<void> addToDB(
+Future<void> _addBookToDB(
   String path,
   Tuple2<BookModel, Map<String, Uint8List>> res,
   Database db,
@@ -155,7 +125,7 @@ Future<void> addToDB(
   });
 }
 
-Future<Tuple2<BookModel, Map<String, Uint8List>>> readBookFromDB(
+Future<Tuple2<BookModel, Map<String, Uint8List>>> _readBookFromDB(
   String path,
   Database db,
 ) async {
@@ -187,7 +157,7 @@ Future<Tuple2<BookModel, Map<String, Uint8List>>> readBookFromDB(
   return Tuple2(book, imagesMap);
 }
 
-Future<ParsedDescription> readDescriptionFromDB(
+Future<ParsedDescription> _readDescriptionFromDB(
   String path,
   Database db,
 ) async {
@@ -213,8 +183,11 @@ Future<ParsedDescription> readDescriptionFromDB(
   );
 }
 
-Future<ParsedDescription> readDescriptionFromFile(String path) async {
-  if (path.split('/').last == 'zip') {
+Future<ParsedDescription> _readDescriptionFromFile(String initialPath) async {
+  // TODO decide smthing with unique paths
+  var path = initialPath;
+
+  if (path.split('.').last == 'zip') {
     path = await _prepareZip(path);
   }
 
@@ -251,11 +224,11 @@ Future<ParsedDescription> readDescriptionFromFile(String path) async {
   return Future.value(res);
 }
 
-Future<ParsedDescription> readDescription(String path, Database db) async {
-  var res = await readDescriptionFromDB(path, db);
+Future<ParsedDescription> _readDescription(String path, Database db) async {
+  var res = await _readDescriptionFromDB(path, db);
 
   if (res == null) {
-    res = await readDescriptionFromFile(path);
+    res = await _readDescriptionFromFile(path);
   }
 
   return res;
@@ -273,7 +246,7 @@ class ActionS {
   }
 
   Future<void> setOpenedDescription(String path) async {
-    final res = await readDescription(path, _state.db);
+    final res = await _readDescription(path, _state.db);
 
     return _state.openedDescription.change((_) => res);
   }
@@ -293,11 +266,12 @@ class ActionS {
     final book = res.item1;
     final imagesMap = res.item2;
     final parsedBook = ParsedBook.fromBook(book, imagesMap);
+    final parsedPreview = ParsedPreview.fromBook(book);
 
     _state.booksList.change((prev) {
       final hasBook = prev.any((element) => element.path == path);
       if (!hasBook) {
-        prev.add(parsedBook);
+        prev.add(parsedPreview);
       }
       return prev;
     });
@@ -306,7 +280,7 @@ class ActionS {
   }
 
   Future<void> openBookFromDB(String path) async {
-    final res = await readBookFromDB(path, _state.db);
+    final res = await _readBookFromDB(path, _state.db);
 
     await openBook(path, res);
   }
@@ -326,7 +300,7 @@ class ActionS {
   Future<void> addBookToDBAndOpen(String path) async {
     final res = await _prepareBook(path);
 
-    await addToDB(path, res, _state.db);
+    await _addBookToDB(path, res, _state.db);
 
     _updateDescription(res.item1, true);
 
@@ -334,21 +308,32 @@ class ActionS {
   }
 
   Future<void> updateBookChapters(int currentChapter) async {
-    final book = _state.openedBook.get();
-    final path = book.path;
-    final chapters = book.offsetsMap.map((key, value) => MapEntry(key.toString(), value.toJson()));
+    try {
+      final book = _state.openedBook.get();
+      final path = book.path;
+      final chapters =
+          book.offsetsMap.map((key, value) => MapEntry(key.toString(), value.toJson()));
+      final date = DateTime.now().toIso8601String();
 
-    print('Update chapters: $chapters');
-    print(chapters.runtimeType);
-    print(chapters["0"].runtimeType);
+      _state.db.update(
+        tableBooks,
+        {
+          'chapters': json.encode(chapters),
+          'currentChapter': currentChapter,
+          'opened': date,
+        },
+        where: "path = ?",
+        whereArgs: [path],
+      );
 
-    _state.db.update(
-      tableBooks,
-      {'chapters': json.encode(chapters), 'currentChapter': currentChapter},
-      where: "path = ?",
-      whereArgs: [path],
-    );
-
-    print('Updated chapters');
+      _state.booksList.change((prev) {
+        final currentInList = prev.firstWhere((element) => element.path == path);
+        currentInList.opened = date;
+        prev.sort((a, b) => b.openedNum - a.openedNum);
+        return prev;
+      });
+    } catch (e) {
+      print('Failed to update chapters!');
+    }
   }
 }

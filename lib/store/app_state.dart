@@ -5,11 +5,12 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/parsed_book.dart';
 import '../models/parsed_description.dart';
+import '../models/parsed_preview.dart';
 
 final tableImages = 'Images';
 final tableBooks = 'Books';
 
-Future<void> onOpen(Database db) async {
+Future<void> reinitDB(Database db) async {
   return db.transaction((txn) async {
     await txn.execute("DROP TABLE IF EXISTS $tableImages");
     await txn.execute("DROP TABLE IF EXISTS $tableBooks");
@@ -38,6 +39,12 @@ Future<void> onOpen(Database db) async {
   });
 }
 
+Future<void> onUpgrade(Database db, int oldVersion, int newVersion) async {
+  if (oldVersion == newVersion) return;
+
+  return reinitDB(db);
+}
+
 class AppState {
   final isInitialized = Observable(false);
 
@@ -47,7 +54,7 @@ class AppState {
 
   final openedBook = Observable<ParsedBook>(null);
 
-  final booksList = Observable<List<ParsedBook>>([]);
+  final booksList = Observable<List<ParsedPreview>>([]);
 
   Database db;
 
@@ -68,9 +75,24 @@ class AppState {
     final databasesPath = await getDatabasesPath();
     print('databasesPath: $databasesPath');
     String path = join(databasesPath, 'database.db');
-    db = await openDatabase(path, version: 1, onOpen: onOpen).then((value) {
+    db = await openDatabase(
+      path,
+      version: 1,
+      onUpgrade: onUpgrade,
+      // onOpen: (db) async => await reinitDB(db),
+    ).then((db) async {
       print('Opened DB');
-      return value;
+
+      final rawPreviews = await db.query(
+        tableBooks,
+        columns: ['cover', 'description', 'title', 'opened', 'path', 'preview'],
+      );
+
+      final books = rawPreviews.map((e) => ParsedPreview.fromJson(e)).toList();
+
+      booksList.change((_) => books);
+
+      return db;
     });
 
     return;
