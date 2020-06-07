@@ -29,7 +29,7 @@ class _BookReaderState extends State<BookReader> {
   String title;
   Map<String, Uint8List> imagesMap;
   Uint8List preview;
-  Map<int, int> offsetsMap;
+  Map<int, ChapterModel> offsetsMap;
   List<xml.XmlNode> sections;
   List<String> titles;
 
@@ -100,10 +100,6 @@ class _BookReaderState extends State<BookReader> {
     );
   }
 
-  void setOffset(int chapter, int offset) {
-    offsetsMap[chapter] = offset;
-  }
-
   Widget buildReader() {
     final max = sections.length - 1;
 
@@ -117,7 +113,6 @@ class _BookReaderState extends State<BookReader> {
         i,
         max,
         _pageCtr,
-        setOffset,
         offsetsMap,
         imagesMap,
       ),
@@ -139,8 +134,7 @@ class Chapter extends StatefulWidget {
   final int index;
   final int max;
   final PageController pageCtr;
-  final void Function(int, int) setOffset;
-  final Map<int, int> offsetsMap;
+  final Map<int, ChapterModel> offsetsMap;
   final Map<String, Uint8List> imagesMap;
 
   Chapter(
@@ -149,7 +143,6 @@ class Chapter extends StatefulWidget {
     this.index,
     this.max,
     this.pageCtr,
-    this.setOffset,
     this.offsetsMap,
     this.imagesMap, {
     Key key,
@@ -159,30 +152,38 @@ class Chapter extends StatefulWidget {
   _ChapterState createState() => _ChapterState();
 }
 
-class _ChapterState extends State<Chapter> {
+class _ChapterState extends State<Chapter> with SingleTickerProviderStateMixin {
   final _state = getIt.get<AppState>();
 
   final _itemScrollController = ItemScrollController();
   final itemPositionsListener = ItemPositionsListener.create();
-  final temp = StreamController<int>();
+  final temp = StreamController<double>();
+  // AnimationController _animatedController;
+  // Animation<double> _animation;
   int length = 0;
 
   @override
   void initState() {
     super.initState();
+    // _animatedController = AnimationController(vsync: this);
+    // _animation = _animatedController;
+
+    try {
+      final progress = widget.offsetsMap[widget.index].progress;
+      temp.add(progress);
+    } catch (e) {
+      temp.add(0);
+    }
+
     itemPositionsListener.itemPositions.addListener(() {
       final values = itemPositionsListener.itemPositions.value.map((el) => el.index).toList();
-      // TODO send leading edge position
-      // print('---');
-      // print(itemPositionsListener.itemPositions.value.last);
-      // print('---');
+
+      if (length > 0 && values.indexOf(length - 1) > -1) {
+        return temp.add(1);
+      }
 
       if (values.indexOf(0) > -1) {
         return temp.add(0);
-      }
-
-      if (length > 0 && values.indexOf(length - 1) > -1) {
-        return temp.add(length - 1);
       }
 
       values.sort();
@@ -195,8 +196,38 @@ class _ChapterState extends State<Chapter> {
 
       tmp = Math.min((tmp / length).round(), values.length - 1);
 
-      temp.add(values[tmp]);
+      temp.add(values[tmp] / length);
     });
+  }
+
+  /// [index, offset, progress]
+  List<double> updateOffset(Iterable<ItemPosition> values) {
+    final sorted = values.toList();
+    sorted.sort((a, b) => a.index - b.index);
+
+    final leadingIndex = sorted.first.index.toDouble();
+    final leadingOffset = sorted.first.itemLeadingEdge;
+
+    double progress;
+
+    final indexes = sorted.map((e) => e.index).toList();
+
+    if (length > 0 && indexes.indexOf(length - 1) > -1) {
+      progress = 1;
+    } else if (indexes.indexOf(0) > -1) {
+      progress = 0;
+    } else {
+      int meanIndex = 0;
+
+      for (var val in indexes) {
+        meanIndex += val;
+      }
+
+      meanIndex = Math.min((meanIndex / length).round(), values.length - 1);
+      progress = indexes[meanIndex] / length;
+    }
+
+    return [leadingIndex, leadingOffset, progress];
   }
 
   @override
@@ -205,22 +236,17 @@ class _ChapterState extends State<Chapter> {
     temp.close();
 
     final values = itemPositionsListener.itemPositions.value;
-    final list = values.map((el) => el.index).toList();
+    // final list = values.map((el) => el.index).toList();
 
-    if (list.indexOf(0) > -1) {
-      return widget.setOffset(widget.index, 0);
+    final result = updateOffset(values);
+
+    if (widget.offsetsMap[widget.index] == null) {
+      widget.offsetsMap[widget.index] = ChapterModel();
     }
 
-    if (length > 0 && list.indexOf(length - 1) > -1) {
-      return widget.setOffset(widget.index, length - 1);
-    }
-
-    final val = values.fold<int>(
-      length,
-      (previousValue, element) => element.index < previousValue ? element.index : previousValue,
-    );
-
-    widget.setOffset(widget.index, val);
+    widget.offsetsMap[widget.index].leadingIndex = result[0].toInt();
+    widget.offsetsMap[widget.index].leadingOffset = result[1];
+    widget.offsetsMap[widget.index].progress = result[2];
   }
 
   @override
@@ -243,14 +269,17 @@ class _ChapterState extends State<Chapter> {
         .where((element) => element.length > 0)
         .toList();
 
-    int offset = 0;
     length = children.length;
 
+    int initialScrollIndex = 0;
+    double initialAlignment = 0;
+
     try {
-      offset = widget.offsetsMap[widget.index] ?? 0;
+      initialScrollIndex = widget.offsetsMap[widget.index].leadingIndex;
+      initialAlignment = widget.offsetsMap[widget.index].leadingOffset;
     } catch (e) {}
 
-    print('Length: $length, Offset: $offset, ${offset == length - 1}');
+    print('Length: $length, Offset: $initialAlignment, Index: $initialScrollIndex');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -279,8 +308,8 @@ class _ChapterState extends State<Chapter> {
               itemCount: children.length,
               itemScrollController: _itemScrollController,
               itemPositionsListener: itemPositionsListener,
-              initialScrollIndex: offset,
-              initialAlignment: offset == length - 1 ? 0.9 : 0,
+              initialScrollIndex: initialScrollIndex,
+              initialAlignment: initialAlignment,
               physics: BouncingScrollPhysics(),
             ),
           ),
@@ -306,12 +335,12 @@ class _ChapterState extends State<Chapter> {
             ),
             width: MediaQuery.of(context).size.width / 2,
           ),
-          StreamBuilder<int>(
+          StreamBuilder<double>(
             stream: temp.stream,
             builder: (ctx, snap) {
               if (snap.hasData) {
-                final num = length > 1 ? snap.data / (length - 1) : 1;
-                return Text(num.toStringAsFixed(3));
+                final progress = length > 1 ? snap.data : 1.0;
+                return Text(progress.toStringAsFixed(3));
               }
 
               return Text('0');

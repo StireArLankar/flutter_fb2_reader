@@ -4,16 +4,17 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:typed_data';
 
-Future<void> onCreate(Database db, int version) async {
+Future<void> onOpen(Database db) async {
   return db.transaction((txn) async {
     await txn.execute("DROP TABLE IF EXISTS Images");
     await txn.execute("DROP TABLE IF EXISTS Test");
+    await txn.execute("DROP TABLE IF EXISTS Books");
 
     await txn
         .execute('CREATE TABLE Images(guid TEXT PRIMARY KEY, source TEXT, id TEXT, image BLOB)');
 
     await txn.execute(
-      'CREATE TABLE Test (path TEXT PRIMARY KEY, filename TEXT, description TEXT, content TEXT, cover BLOB, modified TEXT)',
+      'CREATE TABLE Books (path TEXT PRIMARY KEY, filename TEXT, description TEXT, content TEXT, cover BLOB, modified TEXT, opened TEXT, chapters TEXT)',
     );
   });
 }
@@ -26,11 +27,34 @@ class ParsedDescription {
   ParsedDescription(this.path, this.description, this.cover);
 }
 
+class ChapterModel {
+  double progress;
+  int leadingIndex;
+  double leadingOffset;
+
+  ChapterModel({this.progress, this.leadingIndex, this.leadingOffset});
+
+  ChapterModel.fromJson(Map<String, dynamic> json) {
+    progress = json['progress'];
+    leadingIndex = json['leadingIndex'];
+    leadingOffset = json['leadingOffset'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['progress'] = this.progress;
+    data['leadingIndex'] = this.leadingIndex;
+    data['leadingOffset'] = this.leadingOffset;
+    return data;
+  }
+}
+
 class ParsedBook {
   final String title;
   final String path;
   final Map<String, Uint8List> imagesMap;
-  final Map<int, int> offsetsMap;
+  // [leadingIndex, leadingOffset, progress]
+  final Map<int, ChapterModel> offsetsMap;
   final String content;
   final Uint8List preview;
 
@@ -72,7 +96,7 @@ class AppState {
     final databasesPath = await getDatabasesPath();
     print('databasesPath: $databasesPath');
     String path = join(databasesPath, 'database.db');
-    db = await openDatabase(path, version: 1, onCreate: onCreate).then((value) {
+    db = await openDatabase(path, version: 1, onOpen: onOpen).then((value) {
       print('Opened DB');
       return value;
     });

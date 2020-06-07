@@ -152,7 +152,7 @@ Future<ParsedBook> _parseBook(String path) async {
   print('Preview compressing');
   final preview = await compressImage(imagesMap[coverId], 200);
 
-  final Map<int, int> offsetsMap = {};
+  final Map<int, ChapterModel> offsetsMap = {};
 
   final finalBody = '<body>' +
       document.findAllElements('body').map((body) {
