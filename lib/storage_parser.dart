@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter_observable_state/flutter_observable_state.dart';
 import 'package:path/path.dart' as p;
 import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
@@ -246,6 +247,7 @@ class _PathProviderAppState extends State<PathProviderApp> {
         SizedBox(height: 10),
         ..._storageInfo.map((e) => Text(e.rootDir)),
         SizedBox(height: 10),
+        observe(() => Text('Library length: ${_state.booksList.get().length.toString()}')),
         Text("Found fb2 files", style: bold),
         Expanded(
           child: ListView.builder(

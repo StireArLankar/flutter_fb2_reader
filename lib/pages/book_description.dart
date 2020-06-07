@@ -55,7 +55,8 @@ class BookDescription extends StatelessWidget {
   }
 
   void _openReader(BuildContext ctx) async {
-    await _actions.setOpenedBook(_state.openedDescription.get().path);
+    // await _actions.setOpenedBook(_state.openedDescription.get().path);
+    await _actions.addToDBAndOpen(_state.openedDescription.get().path);
     Navigator.pushNamed(ctx, BookReader.pathName);
   }
 

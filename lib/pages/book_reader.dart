@@ -1,16 +1,18 @@
 import 'dart:async';
+import 'dart:math' as Math;
 import 'dart:typed_data';
 import 'dart:ui';
-import 'dart:math' as Math;
+
 import 'package:flutter/material.dart';
-import 'package:flutter_fb2_reader/pages/book_drawer.dart';
-import 'package:flutter_observable_state/flutter_observable_state.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:xml/xml.dart' as xml;
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_html/html_parser.dart';
 import 'package:flutter_html/style.dart';
+import 'package:flutter_observable_state/flutter_observable_state.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:xml/xml.dart' as xml;
 
+import '../models/chapter.dart';
+import '../pages/book_drawer.dart';
 import '../store/app_state.dart';
 import '../store/services.dart';
 import 'book_options.dart';
@@ -343,7 +345,7 @@ class _ChapterState extends State<Chapter> with SingleTickerProviderStateMixin {
                 return Text(progress.toStringAsFixed(3));
               }
 
-              return Text('0');
+              return Text(0.toStringAsFixed(3));
             },
           ),
           Row(

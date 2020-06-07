@@ -1,71 +1,40 @@
 import 'package:flutter_observable_state/flutter_observable_state.dart';
+import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import 'dart:typed_data';
+
+import '../models/parsed_book.dart';
+import '../models/parsed_description.dart';
+
+final tableImages = 'Images';
+final tableBooks = 'Books';
 
 Future<void> onOpen(Database db) async {
   return db.transaction((txn) async {
-    await txn.execute("DROP TABLE IF EXISTS Images");
-    await txn.execute("DROP TABLE IF EXISTS Test");
-    await txn.execute("DROP TABLE IF EXISTS Books");
+    await txn.execute("DROP TABLE IF EXISTS $tableImages");
+    await txn.execute("DROP TABLE IF EXISTS $tableBooks");
 
-    await txn
-        .execute('CREATE TABLE Images(guid TEXT PRIMARY KEY, source TEXT, id TEXT, image BLOB)');
+    await txn.execute("CREATE TABLE $tableImages ("
+        "guid INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "source TEXT,"
+        "id TEXT,"
+        "image BLOB"
+        ")");
 
-    await txn.execute(
-      'CREATE TABLE Books (path TEXT PRIMARY KEY, filename TEXT, description TEXT, content TEXT, cover BLOB, modified TEXT, opened TEXT, chapters TEXT)',
-    );
+    await txn.execute("CREATE TABLE $tableBooks ("
+        "guid INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "path TEXT,"
+        "filename TEXT,"
+        "description TEXT,"
+        "content TEXT,"
+        "cover BLOB,"
+        "preview BLOB,"
+        "modified TEXT,"
+        "opened TEXT,"
+        "chapters TEXT,"
+        "title TEXT"
+        ")");
   });
-}
-
-class ParsedDescription {
-  final String path;
-  final String description;
-  final Uint8List cover;
-
-  ParsedDescription(this.path, this.description, this.cover);
-}
-
-class ChapterModel {
-  double progress;
-  int leadingIndex;
-  double leadingOffset;
-
-  ChapterModel({this.progress, this.leadingIndex, this.leadingOffset});
-
-  ChapterModel.fromJson(Map<String, dynamic> json) {
-    progress = json['progress'];
-    leadingIndex = json['leadingIndex'];
-    leadingOffset = json['leadingOffset'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['progress'] = this.progress;
-    data['leadingIndex'] = this.leadingIndex;
-    data['leadingOffset'] = this.leadingOffset;
-    return data;
-  }
-}
-
-class ParsedBook {
-  final String title;
-  final String path;
-  final Map<String, Uint8List> imagesMap;
-  // [leadingIndex, leadingOffset, progress]
-  final Map<int, ChapterModel> offsetsMap;
-  final String content;
-  final Uint8List preview;
-
-  ParsedBook(
-    this.title,
-    this.path,
-    this.imagesMap,
-    this.offsetsMap,
-    this.content,
-    this.preview,
-  );
 }
 
 class AppState {
@@ -76,6 +45,8 @@ class AppState {
   final openedDescription = Observable<ParsedDescription>(null);
 
   final openedBook = Observable<ParsedBook>(null);
+
+  final booksList = Observable<List<ParsedBook>>([]);
 
   Database db;
 
