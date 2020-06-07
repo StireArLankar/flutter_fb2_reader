@@ -36,10 +36,7 @@ class BookDescription extends StatelessWidget {
               content.cover == null
                   ? Image.asset('assets/placeholder.png')
                   : Image.memory(content.cover),
-              RaisedButton(
-                child: Text('Open reader'),
-                onPressed: () => _openReader(context),
-              ),
+              _buildButton(context, content.isInLibrary),
               _buildAuthors(info),
               _buildGenres(info),
               _buildTitle(info),
@@ -54,9 +51,27 @@ class BookDescription extends StatelessWidget {
     );
   }
 
-  void _openReader(BuildContext ctx) async {
-    // await _actions.setOpenedBook(_state.openedDescription.get().path);
-    await _actions.addToDBAndOpen(_state.openedDescription.get().path);
+  Widget _buildButton(BuildContext ctx, bool isInLibrary) {
+    if (isInLibrary) {
+      return RaisedButton(
+        child: Text('Open reader'),
+        onPressed: () => _openFromDB(ctx),
+      );
+    }
+
+    return RaisedButton(
+      child: Text('Add to library and open reader'),
+      onPressed: () => _addBookToDBandOpen(ctx),
+    );
+  }
+
+  void _openFromDB(BuildContext ctx) async {
+    await _actions.openBookFromDB(_state.openedDescription.get().path);
+    Navigator.pushNamed(ctx, BookReader.pathName);
+  }
+
+  void _addBookToDBandOpen(BuildContext ctx) async {
+    await _actions.addBookToDBAndOpen(_state.openedDescription.get().path);
     Navigator.pushNamed(ctx, BookReader.pathName);
   }
 

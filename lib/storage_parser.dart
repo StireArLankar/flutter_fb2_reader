@@ -249,20 +249,32 @@ class _PathProviderAppState extends State<PathProviderApp> {
         SizedBox(height: 10),
         observe(() => Text('Library length: ${_state.booksList.get().length.toString()}')),
         Text("Found fb2 files", style: bold),
-        Expanded(
-          child: ListView.builder(
+        Expanded(child: observe(() {
+          final books = _state.booksList.get();
+          return ListView.builder(
             itemBuilder: (ctx, i) {
               return ListTile(
-                leading: CircleAvatar(
-                  child: Text('$i'),
-                ),
-                onTap: () => _openReader(_filesPaths[i]),
-                title: Text(_filesPaths[i]),
+                leading: Image.memory(books[i].preview),
+                title: Text(books[i].title),
+                onTap: () => _openDescription(books[i].path),
               );
             },
-            itemCount: _filesPaths.length,
-          ),
-        ),
+            itemCount: books.length,
+          );
+        })
+            // child: ListView.builder(
+            //   itemBuilder: (ctx, i) {
+            //     return ListTile(
+            //       leading: CircleAvatar(
+            //         child: Text('$i'),
+            //       ),
+            //       onTap: () => _openReader(_filesPaths[i]),
+            //       title: Text(_filesPaths[i]),
+            //     );
+            //   },
+            //   itemCount: _filesPaths.length,
+            // ),
+            ),
       ],
     );
   }

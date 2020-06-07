@@ -96,42 +96,6 @@ Future<String> _prepareZip(String path) async {
   return Future.value(null);
 }
 
-Future<ParsedDescription> _parseBookDescription(String path) async {
-  if (path.split('/').last == 'zip') {
-    path = await _prepareZip(path);
-  }
-
-  final file = File(path);
-  final contents = await file.readAsString();
-  final document = xml.XmlDocument.parse(contents);
-
-  final desc = document.findAllElements('description').first;
-
-  Uint8List cover;
-
-  try {
-    final coverpage = desc.findAllElements('coverpage').first;
-
-    final imgId = coverpage
-        .findElements('image')
-        .first
-        .attributes
-        .firstWhere((element) => element.name.toString() == 'l:href')
-        .value;
-
-    final binary = document.findAllElements('binary').firstWhere((element) {
-      final attrib = element.attributes.firstWhere((element) => element.name.toString() == 'id');
-      final res = '#' + attrib.value == imgId;
-
-      return res;
-    });
-
-    cover = base64Decode(binary.text.trim());
-  } catch (e) {}
-
-  return Future.value(ParsedDescription(path, desc.toXmlString(), cover));
-}
-
 Future<Uint8List> compressImage(Uint8List list, int maxSize) async {
   final img = await decodeImageFromList(list);
 
@@ -256,7 +220,7 @@ Future<void> addToDB(
   });
 }
 
-Future<Tuple2<BookModel, Map<String, Uint8List>>> readFromDB(
+Future<Tuple2<BookModel, Map<String, Uint8List>>> readBookFromDB(
   String path,
   Database db,
 ) async {
@@ -288,6 +252,80 @@ Future<Tuple2<BookModel, Map<String, Uint8List>>> readFromDB(
   return Tuple2(book, imagesMap);
 }
 
+Future<ParsedDescription> readDescriptionFromDB(
+  String path,
+  Database db,
+) async {
+  final rawList = await db.query(
+    tableBooks,
+    where: "path = ?",
+    whereArgs: [path],
+    columns: ['cover', 'description', 'title'],
+  );
+
+  if (rawList.length == 0) {
+    return null;
+  }
+
+  final book = rawList.first;
+
+  return ParsedDescription(
+    path,
+    book['description'],
+    book['cover'],
+    book['title'],
+    true,
+  );
+}
+
+Future<ParsedDescription> readDescriptionFromFile(String path) async {
+  if (path.split('/').last == 'zip') {
+    path = await _prepareZip(path);
+  }
+
+  final file = File(path);
+  final contents = await file.readAsString();
+  final document = xml.XmlDocument.parse(contents);
+
+  final desc = document.findAllElements('description').first;
+  final title = desc.getElement('title-info').getElement('book-title').text;
+  Uint8List cover;
+
+  try {
+    final coverpage = desc.findAllElements('coverpage').first;
+
+    final imgId = coverpage
+        .findElements('image')
+        .first
+        .attributes
+        .firstWhere((element) => element.name.toString() == 'l:href')
+        .value;
+
+    final binary = document.findAllElements('binary').firstWhere((element) {
+      final attrib = element.attributes.firstWhere((element) => element.name.toString() == 'id');
+      final res = '#' + attrib.value == imgId;
+
+      return res;
+    });
+
+    cover = base64Decode(binary.text.trim());
+  } catch (e) {}
+
+  final res = ParsedDescription(path, desc.toXmlString(), cover, title, false);
+
+  return Future.value(res);
+}
+
+Future<ParsedDescription> readDescription(String path, Database db) async {
+  var res = await readDescriptionFromDB(path, db);
+
+  if (res == null) {
+    res = await readDescriptionFromFile(path);
+  }
+
+  return res;
+}
+
 class ActionS {
   final _state = getIt.get<AppState>();
 
@@ -300,7 +338,7 @@ class ActionS {
   }
 
   Future<void> setOpenedDescription(String path) async {
-    final res = await _parseBookDescription(path);
+    final res = await readDescription(path, _state.db);
 
     return _state.openedDescription.change((_) => res);
   }
@@ -319,21 +357,50 @@ class ActionS {
     _state.openedBook.change((_) => null);
   }
 
-  Future<void> addToDBAndOpen(String path) async {
-    final res1 = await _prepareBook(path);
-    await addToDB(path, res1, _state.db);
-    final res = await readFromDB(path, _state.db);
-
+  Future<void> openBook(
+    String path,
+    Tuple2<BookModel, Map<String, Uint8List>> res,
+  ) async {
     final book = res.item1;
     final imagesMap = res.item2;
-
     final parsedBook = ParsedBook.fromBook(book, imagesMap);
 
     _state.booksList.change((prev) {
-      prev.add(parsedBook);
+      final hasBook = prev.any((element) => element.path == path);
+      if (!hasBook) {
+        prev.add(parsedBook);
+      }
       return prev;
     });
 
     return _state.openedBook.change((_) => parsedBook);
+  }
+
+  Future<void> openBookFromDB(String path) async {
+    final res = await readBookFromDB(path, _state.db);
+
+    await openBook(path, res);
+  }
+
+  void _updateDescription(BookModel book, bool isInLibrary) {
+    final res = ParsedDescription(
+      book.path,
+      book.description,
+      book.cover,
+      book.title,
+      isInLibrary,
+    );
+
+    _state.openedDescription.change((_) => res);
+  }
+
+  Future<void> addBookToDBAndOpen(String path) async {
+    final res = await _prepareBook(path);
+
+    await addToDB(path, res, _state.db);
+
+    _updateDescription(res.item1, true);
+
+    await openBook(path, res);
   }
 }

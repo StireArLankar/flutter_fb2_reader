@@ -6,10 +6,24 @@ class ParsedDescription {
   final String path;
   final String description;
   final Uint8List cover;
+  final String title;
+  final bool isInLibrary;
 
-  ParsedDescription(this.path, this.description, this.cover);
+  ParsedDescription(
+    this.path,
+    this.description,
+    this.cover,
+    this.title,
+    this.isInLibrary,
+  );
 
-  factory ParsedDescription.fromBook(BookModel book) {
-    return ParsedDescription(book.path, book.description, book.cover);
+  factory ParsedDescription.fromBook(BookModel book, bool isInLibrary) {
+    return ParsedDescription(
+      book.path,
+      book.description,
+      book.cover,
+      book.title,
+      isInLibrary,
+    );
   }
 }
