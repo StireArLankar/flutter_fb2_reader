@@ -52,10 +52,10 @@ class MyPainter extends CustomPainter {
 
   @override
   void paint(canvas, size) {
-    canvas.drawRect(Offset(0, 0) & size, Paint());
+    // canvas.drawRect(Offset(0, 0) & size, Paint());
 
     // Since text is overflowing, you have two options: cliping before drawing text or/and defining max lines.
-    canvas.clipRect(Offset(0, 0) & size);
+    // canvas.clipRect(Offset(0, 0) & size);
 
     final TextStyle style = TextStyle(
       color: Colors.black,
@@ -72,7 +72,7 @@ class MyPainter extends CustomPainter {
     )..layout(maxWidth: size.width - 12.0 - 12.0);
     // TextPainter doesn't need to have specified width (would use infinity if not defined).
     // BTW: using the TextPainter you can check size the text take to be rendered (without `paint`ing it).
-    textPainter.paint(canvas, const Offset(12.0, 12.0));
+    // textPainter.paint(canvas, const Offset(12.0, 12.0));
 
     print('----');
     print('TextPainter');
