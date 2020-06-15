@@ -172,33 +172,41 @@ class _ChapterState extends State<Chapter> with SingleTickerProviderStateMixin {
 
   final _itemScrollController = ItemScrollController();
   final itemPositionsListener = ItemPositionsListener.create();
-  final temp = StreamController<double>();
-  // AnimationController _animatedController;
-  // Animation<double> _animation;
+  AnimationController _animationController;
+  double currentOffset;
   int length = 0;
 
   @override
   void initState() {
     super.initState();
-    // _animatedController = AnimationController(vsync: this);
-    // _animation = _animatedController;
+    double value;
 
     try {
       final progress = widget.offsetsMap[widget.index].progress;
-      temp.add(progress);
+      currentOffset = progress;
+      value = progress;
     } catch (e) {
-      temp.add(0);
+      currentOffset = 0.0;
+      value = 0.0;
     }
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+      lowerBound: 0.0,
+      upperBound: 1.0,
+      value: value,
+    );
 
     itemPositionsListener.itemPositions.addListener(() {
       final values = itemPositionsListener.itemPositions.value.map((el) => el.index).toList();
 
       if (length > 0 && values.indexOf(length - 1) > -1) {
-        return temp.add(1);
+        return _updateAnimation(1.0);
       }
 
       if (values.indexOf(0) > -1) {
-        return temp.add(0);
+        return _updateAnimation(0.0);
       }
 
       values.sort();
@@ -211,8 +219,15 @@ class _ChapterState extends State<Chapter> with SingleTickerProviderStateMixin {
 
       tmp = Math.min((tmp / length).round(), values.length - 1);
 
-      temp.add(values[tmp] / length);
+      _updateAnimation(values[tmp] / length);
     });
+  }
+
+  void _updateAnimation(double offset) {
+    currentOffset = offset;
+    if (_animationController.value != currentOffset && !_animationController.isAnimating) {
+      _animationController.animateTo(currentOffset);
+    }
   }
 
   /// [index, offset, progress]
@@ -248,10 +263,9 @@ class _ChapterState extends State<Chapter> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     super.dispose();
-    temp.close();
+    _animationController.dispose();
 
     final values = itemPositionsListener.itemPositions.value;
-    // final list = values.map((el) => el.index).toList();
 
     final result = updateOffset(values);
 
@@ -337,41 +351,53 @@ class _ChapterState extends State<Chapter> with SingleTickerProviderStateMixin {
     return Container(
       height: 50.0,
       color: Colors.blueGrey[100],
-      padding: EdgeInsets.symmetric(horizontal: 16.0),
-      alignment: Alignment.centerLeft,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Stack(
         children: <Widget>[
-          SizedBox(
-            child: FittedBox(
-              child: Text(title),
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 5, left: 16.0, right: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                SizedBox(
+                  child: FittedBox(
+                    child: Text(title),
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                  ),
+                  width: MediaQuery.of(context).size.width / 2,
+                ),
+                Row(
+                  children: <Widget>[
+                    IconButton(
+                      icon: Icon(Icons.arrow_upward),
+                      onPressed: index > 0 ? () => widget.pageCtr.jumpToPage(index - 1) : null,
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.arrow_downward),
+                      onPressed: index < max ? () => widget.pageCtr.jumpToPage(index + 1) : null,
+                    ),
+                  ],
+                ),
+              ],
             ),
-            width: MediaQuery.of(context).size.width / 2,
           ),
-          StreamBuilder<double>(
-            stream: temp.stream,
-            builder: (ctx, snap) {
-              if (snap.hasData) {
-                final progress = length > 1 ? snap.data : 1.0;
-                return Text(progress.toStringAsFixed(3));
-              }
-
-              return Text(0.toStringAsFixed(3));
-            },
-          ),
-          Row(
-            children: <Widget>[
-              IconButton(
-                icon: Icon(Icons.arrow_upward),
-                onPressed: index > 0 ? () => widget.pageCtr.jumpToPage(index - 1) : null,
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: double.infinity,
+              height: 5,
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (ctx, _) => FractionallySizedBox(
+                  widthFactor: _animationController.value,
+                  child: Container(
+                    color: Colors.red,
+                    height: 5,
+                    width: double.infinity,
+                  ),
+                ),
               ),
-              IconButton(
-                icon: Icon(Icons.arrow_downward),
-                onPressed: index < max ? () => widget.pageCtr.jumpToPage(index + 1) : null,
-              ),
-            ],
+            ),
           ),
         ],
       ),
