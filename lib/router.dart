@@ -5,6 +5,7 @@ import 'fb2_reader.dart';
 import 'file_reader.dart';
 import 'pages/book_description.dart';
 import 'pages/book_reader.dart';
+import 'pages/book_reader_pager.dart';
 import 'path_provider.dart';
 import 'path_provider_v2.dart';
 import 'storage_parser.dart';
@@ -19,6 +20,9 @@ Route<dynamic> generateRoutes(RouteSettings settings) {
 
     case BookReader.pathName:
       return MaterialPageRoute(builder: (_) => BookReader());
+
+    case BookReaderPager.pathName:
+      return MaterialPageRoute(builder: (_) => BookReaderPager());
 
     case FileReaderScreen.pathName:
       return MaterialPageRoute(builder: (_) => FileReaderScreen());

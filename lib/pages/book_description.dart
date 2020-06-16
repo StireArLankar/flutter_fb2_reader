@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_fb2_reader/pages/book_reader.dart';
+import 'package:flutter_fb2_reader/pages/book_reader_pager.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_html/html_parser.dart';
 import 'package:flutter_html/style.dart';
@@ -53,9 +54,19 @@ class BookDescription extends StatelessWidget {
 
   Widget _buildButton(BuildContext ctx, bool isInLibrary) {
     if (isInLibrary) {
-      return RaisedButton(
-        child: Text('Open reader'),
-        onPressed: () => _openFromDB(ctx),
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          RaisedButton(
+            child: Text('Open reader'),
+            onPressed: () => _openFromDB(ctx),
+          ),
+          SizedBox(width: 10),
+          RaisedButton(
+            child: Text('Open page reader'),
+            onPressed: () => _openFromDBPager(ctx),
+          ),
+        ],
       );
     }
 
@@ -69,6 +80,12 @@ class BookDescription extends StatelessWidget {
     final path = _state.openedDescription.get().path;
     await _actions.openBookFromDB(path);
     Navigator.pushNamed(ctx, BookReader.pathName);
+  }
+
+  void _openFromDBPager(BuildContext ctx) async {
+    final path = _state.openedDescription.get().path;
+    await _actions.openBookFromDB(path);
+    Navigator.pushNamed(ctx, BookReaderPager.pathName);
   }
 
   void _addBookToDBandOpen(BuildContext ctx) async {
