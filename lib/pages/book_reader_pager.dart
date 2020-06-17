@@ -84,13 +84,68 @@ class _BookReaderPagerState extends State<BookReaderPager> {
     Navigator.of(ctx).pop();
   }
 
-  void getTotalHeight(double height) {
-    print(height);
+  @override
+  Widget build(BuildContext context) {
+    final max = sections.length - 1;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('TextPainter')),
+      body: PageView.builder(
+        controller: _pageCtr,
+        scrollDirection: Axis.horizontal,
+        itemCount: sections.length,
+        itemBuilder: (ctx, index) => Chapter(
+          sections[index],
+          index,
+          max,
+          _pageCtr,
+        ),
+      ),
+    );
+  }
+}
+
+class Chapter extends StatefulWidget {
+  final xml.XmlNode section;
+  final int index;
+  final int max;
+  final PageController pageCtr;
+
+  const Chapter(
+    this.section,
+    this.index,
+    this.max,
+    this.pageCtr, {
+    Key key,
+  }) : super(key: key);
+
+  @override
+  _ChapterState createState() => _ChapterState();
+}
+
+class _ChapterState extends State<Chapter> {
+  PageController _pageCtr;
+
+  int currentPage = 0;
+  int maxPages = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _pageCtr = PageController(initialPage: 0)
+      ..addListener(() => currentPage = _pageCtr.page.toInt());
+  }
+
+  void getMaxPages(int _maxPages) {
+    if (maxPages != _maxPages) {
+      setState(() => maxPages = _maxPages);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    MyPainter(getTotalHeight, sections[0].innerText).paint(
+    MyPainter(getMaxPages, widget.section.innerText).paint(
       Canvas(ui.PictureRecorder()),
       Size(
         ui.window.physicalSize.width / ui.window.devicePixelRatio,
@@ -98,16 +153,35 @@ class _BookReaderPagerState extends State<BookReaderPager> {
       ),
     );
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('TextPainter')),
-      body: PageView.builder(
+    print('MaxPages: $maxPages');
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (not) {
+        if (not.metrics.pixels + 100 < not.metrics.minScrollExtent) {
+          if (widget.index > 0) {
+            widget.pageCtr.jumpToPage(widget.index - 1);
+          }
+        }
+
+        if (not.metrics.pixels - 100 > not.metrics.maxScrollExtent) {
+          if (widget.index < widget.max) {
+            widget.pageCtr.jumpToPage(widget.index + 1);
+          }
+        }
+
+        return true;
+      },
+      child: PageView.builder(
         controller: _pageCtr,
         scrollDirection: Axis.horizontal,
-        itemCount: 20,
+        itemCount: maxPages,
+        physics: BouncingScrollPhysics(),
         itemBuilder: (ctx, index) => Container(
           width: double.infinity,
           height: double.infinity,
-          child: CustomPaint(painter: MyPainterChapter(sections[0].innerText, index)),
+          child: CustomPaint(
+            painter: MyPainterChapter(widget.section.innerText, index),
+          ),
         ),
       ),
     );
@@ -116,28 +190,19 @@ class _BookReaderPagerState extends State<BookReaderPager> {
 
 final TextStyle style = TextStyle(
   color: Colors.black,
-  backgroundColor: Colors.blue[100],
-  decorationStyle: TextDecorationStyle.dotted,
-  decorationColor: Colors.green,
-  decorationThickness: 0.25,
-  fontSize: 15,
+  fontSize: 16,
   height: 1.5,
 );
 
 class MyPainter extends CustomPainter {
-  final void Function(double) getTotalHeight;
+  final void Function(int) getMaxPages;
   final String text;
 
-  MyPainter(this.getTotalHeight, this.text);
+  MyPainter(this.getMaxPages, this.text);
 
   @override
   void paint(canvas, size) {
-    canvas.drawRect(Offset(0, 0) & Size.fromWidth(size.width), Paint()..color = Colors.red[100]);
-
-    // Since text is overflowing, you have two options: cliping before drawing text or/and defining max lines.
-    canvas.clipRect(Offset(0, 0) & size);
-
-    final maxLines = ((size.height) / (style.height * style.fontSize)).floor();
+    final maxLines = size.height ~/ (style.height * style.fontSize);
 
     final TextPainter textPainter = TextPainter(
       text: TextSpan(text: text, style: style),
@@ -145,18 +210,24 @@ class MyPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: size.width - 12.0 - 12.0);
 
-    print('----');
-    print('TextPainter');
-    print('MaxLines: $maxLines');
-    print('didExceedMaxLines ${textPainter.height}');
-    print(textPainter.getPositionForOffset(Offset(size.width, size.height)));
-    getTotalHeight(textPainter.height);
-    print('----');
+    print('TextPainter height: ${textPainter.height}');
+    print('Screen size ${maxLines * style.height * style.fontSize}');
+    print('Screen size raw ${size.height}');
+
+    final maxPages = (textPainter.height / (maxLines * style.height * style.fontSize)).ceil();
+
+    // print('----');
+    // print('TextPainter');
+    // print('MaxLines: $maxLines');
+    // print('didExceedMaxLines ${textPainter.height}');
+    // print(textPainter.getPositionForOffset(Offset(size.width, size.height)));
+    getMaxPages(maxPages);
+    // print('----');
   }
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
-    return false; // Just for example, in real environment should be implemented!
+    return false;
   }
 }
 
@@ -168,22 +239,17 @@ class MyPainterChapter extends CustomPainter {
 
   @override
   void paint(canvas, size) {
-    canvas.drawRect(Offset(0, 0) & Size.fromWidth(size.width), Paint()..color = Colors.red[100]);
+    canvas.drawRect(Offset(0, 0) & Size.fromWidth(size.width), Paint()..color = Colors.white);
 
     final TextStyle style = TextStyle(
       color: Colors.black,
-      backgroundColor: Colors.blue[100],
-      decorationStyle: TextDecorationStyle.dotted,
-      decorationColor: Colors.green,
-      decorationThickness: 0.25,
-      fontSize: 15,
-      height: 4,
+      fontSize: 16,
+      height: 1.5,
     );
 
-    final maxLines = ((size.height) / (style.height * style.fontSize)).floor();
-    final maxLines2 = ((size.height) / (style.height * style.fontSize)).round();
+    final maxLines = (size.height / (style.height * style.fontSize)).floor();
 
-    print('${size.height} ${(style.height * style.fontSize)} $maxLines');
+    // print('${size.height} ${(style.height * style.fontSize)} $maxLines');
 
     final TextPainter textPainter = TextPainter(
       text: TextSpan(text: text, style: style),
@@ -191,18 +257,11 @@ class MyPainterChapter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: size.width - 12.0 - 12.0);
 
-    // final tmp = style.height - 2; // 2
-    // final tmp = style.height - 2.25; // 2.5
-    // final tmp = style.height - 3; // 3
-    final tmp = style.height - 3; // 4
-    // final tmp = style.height - 3.63; // 3.5
-    // final tmp = style.height - 0.8; // 1.8
-    print(tmp);
+    // print(maxLines * style.height * style.fontSize);
 
-    // canvas.clipRect(Rect.fromLTWH(0, 0, size.width, maxLines * style.height * style.fontSize));
+    canvas.clipRect(Rect.fromLTWH(0, 0, size.width, maxLines * style.height * style.fontSize));
 
-    textPainter.paint(
-        canvas, Offset(12.0, -index * (maxLines + tmp) * style.height * style.fontSize));
+    textPainter.paint(canvas, Offset(12.0, -index * maxLines * style.height * style.fontSize));
   }
 
   @override
