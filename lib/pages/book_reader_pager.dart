@@ -94,11 +94,14 @@ class _BookReaderPagerState extends State<BookReaderPager> {
         controller: _pageCtr,
         scrollDirection: Axis.horizontal,
         itemCount: sections.length,
-        itemBuilder: (ctx, index) => Chapter(
-          sections[index],
-          index,
+        itemBuilder: (ctx, i) => Chapter(
+          sections[i],
+          titles[i],
+          i,
           max,
           _pageCtr,
+          offsetsMap,
+          imagesMap,
         ),
       ),
     );
@@ -107,15 +110,21 @@ class _BookReaderPagerState extends State<BookReaderPager> {
 
 class Chapter extends StatefulWidget {
   final xml.XmlNode section;
+  final String title;
   final int index;
   final int max;
   final PageController pageCtr;
+  final Map<int, ChapterModel> offsetsMap;
+  final Map<String, Uint8List> imagesMap;
 
-  const Chapter(
+  Chapter(
     this.section,
+    this.title,
     this.index,
     this.max,
-    this.pageCtr, {
+    this.pageCtr,
+    this.offsetsMap,
+    this.imagesMap, {
     Key key,
   }) : super(key: key);
 
@@ -149,39 +158,95 @@ class _ChapterState extends State<Chapter> {
       Canvas(ui.PictureRecorder()),
       Size(
         ui.window.physicalSize.width / ui.window.devicePixelRatio,
-        ui.window.physicalSize.height / ui.window.devicePixelRatio - 105,
+        ui.window.physicalSize.height / ui.window.devicePixelRatio - 105 - 50,
       ),
     );
 
     print('MaxPages: $maxPages');
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (not) {
-        if (not.metrics.pixels + 100 < not.metrics.minScrollExtent) {
-          if (widget.index > 0) {
-            widget.pageCtr.jumpToPage(widget.index - 1);
-          }
-        }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.max,
+      children: <Widget>[
+        buildHeader(widget.title, widget.index, widget.max),
+        Expanded(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (not) {
+              if (not.metrics.pixels + 100 < not.metrics.minScrollExtent) {
+                if (widget.index > 0) {
+                  widget.pageCtr.jumpToPage(widget.index - 1);
+                }
+              }
 
-        if (not.metrics.pixels - 100 > not.metrics.maxScrollExtent) {
-          if (widget.index < widget.max) {
-            widget.pageCtr.jumpToPage(widget.index + 1);
-          }
-        }
+              if (not.metrics.pixels - 100 > not.metrics.maxScrollExtent) {
+                if (widget.index < widget.max) {
+                  widget.pageCtr.jumpToPage(widget.index + 1);
+                }
+              }
 
-        return true;
-      },
-      child: PageView.builder(
-        controller: _pageCtr,
-        scrollDirection: Axis.horizontal,
-        itemCount: maxPages,
-        physics: BouncingScrollPhysics(),
-        itemBuilder: (ctx, index) => Container(
-          width: double.infinity,
-          height: double.infinity,
-          child: CustomPaint(
-            painter: MyPainterChapter(widget.section.innerText, index),
+              return true;
+            },
+            child: PageView.builder(
+              controller: _pageCtr,
+              scrollDirection: Axis.horizontal,
+              itemCount: maxPages,
+              physics: BouncingScrollPhysics(),
+              itemBuilder: (ctx, index) => Container(
+                width: double.infinity,
+                height: double.infinity,
+                child: CustomPaint(
+                  painter: MyPainterChapter(widget.section.innerText, index),
+                ),
+              ),
+            ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Container buildHeader(String title, int index, int max) {
+    return Container(
+      height: 50.0,
+      color: Colors.blueGrey[100],
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 5, left: 16.0, right: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            SizedBox(
+              child: FittedBox(
+                child: Text(title),
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+              ),
+              width: MediaQuery.of(context).size.width / 2,
+            ),
+            AnimatedBuilder(
+              animation: _pageCtr,
+              builder: (context, _) {
+                if (!_pageCtr.hasClients) {
+                  return Text('1 / $maxPages');
+                }
+
+                final temp = (_pageCtr.page + 1).round();
+
+                return Text('$temp / $maxPages');
+              },
+            ),
+            Row(
+              children: <Widget>[
+                IconButton(
+                  icon: Icon(Icons.arrow_back),
+                  onPressed: index > 0 ? () => widget.pageCtr.jumpToPage(index - 1) : null,
+                ),
+                IconButton(
+                  icon: Icon(Icons.arrow_forward),
+                  onPressed: index < max ? () => widget.pageCtr.jumpToPage(index + 1) : null,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
