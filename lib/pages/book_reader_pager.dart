@@ -154,7 +154,7 @@ class _ChapterState extends State<Chapter> {
 
   @override
   Widget build(BuildContext context) {
-    MyPainter(getMaxPages, widget.section.innerText).paint(
+    MyPainter(getMaxPages, widget.section).paint(
       Canvas(ui.PictureRecorder()),
       Size(
         ui.window.physicalSize.width / ui.window.devicePixelRatio,
@@ -195,7 +195,7 @@ class _ChapterState extends State<Chapter> {
                 width: double.infinity,
                 height: double.infinity,
                 child: CustomPaint(
-                  painter: MyPainterChapter(widget.section.innerText, index),
+                  painter: MyPainterChapter(widget.section, index),
                 ),
               ),
             ),
@@ -261,19 +261,39 @@ final TextStyle style = TextStyle(
 
 class MyPainter extends CustomPainter {
   final void Function(int) getMaxPages;
-  final String text;
+  final xml.XmlNode document;
 
-  MyPainter(this.getMaxPages, this.text);
+  MyPainter(this.getMaxPages, this.document);
 
   @override
   void paint(canvas, size) {
     final maxLines = size.height ~/ (style.height * style.fontSize);
 
-    final TextPainter textPainter = TextPainter(
-      text: TextSpan(text: text, style: style),
+    final children = document.children
+        .map((child) => child.innerText)
+        .where((el) => el.length > 0)
+        .map((child) => TextSpan(
+              children: [
+                WidgetSpan(child: Container()),
+                TextSpan(text: '$child\n'),
+              ],
+            ))
+        .toList();
+
+    final textPainter = TextPainter(
+      text: TextSpan(style: style, children: children),
       textAlign: TextAlign.justify,
       textDirection: TextDirection.ltr,
-    )..layout(maxWidth: size.width - 12.0 - 12.0);
+    );
+
+    textPainter.setPlaceholderDimensions(
+      children
+          .map((e) =>
+              PlaceholderDimensions(size: Size(20, 1), alignment: PlaceholderAlignment.baseline))
+          .toList(),
+    );
+
+    textPainter.layout(maxWidth: size.width - 12.0 - 12.0);
 
     print('TextPainter height: ${textPainter.height}');
     print('Screen size ${maxLines * style.height * style.fontSize}');
@@ -297,10 +317,10 @@ class MyPainter extends CustomPainter {
 }
 
 class MyPainterChapter extends CustomPainter {
-  final String text;
+  final xml.XmlNode document;
   final int index;
 
-  MyPainterChapter(this.text, this.index);
+  MyPainterChapter(this.document, this.index);
 
   @override
   void paint(canvas, size) {
@@ -316,11 +336,31 @@ class MyPainterChapter extends CustomPainter {
 
     // print('${size.height} ${(style.height * style.fontSize)} $maxLines');
 
-    final TextPainter textPainter = TextPainter(
-      text: TextSpan(text: text, style: style),
+    final children = document.children
+        .map((child) => child.innerText)
+        .where((el) => el.length > 0)
+        .map((child) => TextSpan(
+              children: [
+                WidgetSpan(child: Container()),
+                TextSpan(text: '$child\n'),
+              ],
+            ))
+        .toList();
+
+    final textPainter = TextPainter(
+      text: TextSpan(style: style, children: children),
       textAlign: TextAlign.justify,
       textDirection: TextDirection.ltr,
-    )..layout(maxWidth: size.width - 12.0 - 12.0);
+    );
+
+    textPainter.setPlaceholderDimensions(
+      children
+          .map((e) =>
+              PlaceholderDimensions(size: Size(20, 3), alignment: PlaceholderAlignment.middle))
+          .toList(),
+    );
+
+    textPainter.layout(maxWidth: size.width - 12.0 - 12.0);
 
     // print(maxLines * style.height * style.fontSize);
 
