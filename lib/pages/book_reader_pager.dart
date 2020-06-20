@@ -259,6 +259,41 @@ final TextStyle style = TextStyle(
   height: 1.5,
 );
 
+TextSpan parse(xml.XmlNode node) {
+  if (node.nodeType == xml.XmlNodeType.TEXT) {
+    final text = node.toString();
+    return TextSpan(text: text);
+  }
+
+  if (node.nodeType == xml.XmlNodeType.ELEMENT) {
+    final name = (node as xml.XmlElement).name.toString();
+    final inner = node.innerText;
+
+    if (inner.length == 0) {
+      return null;
+    }
+
+    switch (name) {
+      case 'img':
+        return null;
+      case 'strong':
+        return TextSpan(
+          children: node.children.map(parse).toList(),
+          style: TextStyle(fontWeight: FontWeight.bold),
+        );
+      case 'emphasis':
+        return TextSpan(
+          children: node.children.map(parse).toList(),
+          style: TextStyle(fontStyle: FontStyle.italic),
+        );
+      default:
+        return TextSpan(children: node.children.map(parse).toList());
+    }
+  }
+
+  return null;
+}
+
 class MyPainter extends CustomPainter {
   final void Function(int) getMaxPages;
   final xml.XmlNode document;
@@ -270,12 +305,13 @@ class MyPainter extends CustomPainter {
     final maxLines = size.height ~/ (style.height * style.fontSize);
 
     final children = document.children
-        .map((child) => child.innerText)
-        .where((el) => el.length > 0)
+        .map(parse)
+        .where((el) => el != null)
         .map((child) => TextSpan(
               children: [
                 WidgetSpan(child: Container()),
-                TextSpan(text: '$child\n'),
+                child,
+                TextSpan(text: '\n'),
               ],
             ))
         .toList();
@@ -337,12 +373,13 @@ class MyPainterChapter extends CustomPainter {
     // print('${size.height} ${(style.height * style.fontSize)} $maxLines');
 
     final children = document.children
-        .map((child) => child.innerText)
-        .where((el) => el.length > 0)
+        .map(parse)
+        .where((el) => el != null)
         .map((child) => TextSpan(
               children: [
                 WidgetSpan(child: Container()),
-                TextSpan(text: '$child\n'),
+                child,
+                TextSpan(text: '\n'),
               ],
             ))
         .toList();
@@ -356,13 +393,11 @@ class MyPainterChapter extends CustomPainter {
     textPainter.setPlaceholderDimensions(
       children
           .map((e) =>
-              PlaceholderDimensions(size: Size(20, 3), alignment: PlaceholderAlignment.middle))
+              PlaceholderDimensions(size: Size(20, 1), alignment: PlaceholderAlignment.middle))
           .toList(),
     );
 
     textPainter.layout(maxWidth: size.width - 12.0 - 12.0);
-
-    // print(maxLines * style.height * style.fontSize);
 
     canvas.clipRect(Rect.fromLTWH(0, 0, size.width, maxLines * style.height * style.fontSize));
 
