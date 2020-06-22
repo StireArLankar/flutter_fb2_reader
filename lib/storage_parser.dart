@@ -150,8 +150,16 @@ class _PathProviderAppState extends State<PathProviderApp> {
               final date = DateFormat('yyyy-MM-dd – kk:mm')
                   .format(DateTime.tryParse(books[i].opened).toLocal());
 
+              Widget child;
+              try {
+                if (books[i].preview == null) throw Error();
+                child = Image.memory(books[i].preview);
+              } catch (e) {
+                child = Image.asset('assets/placeholder.png');
+              }
+
               return ListTile(
-                leading: Image.memory(books[i].preview),
+                leading: child,
                 title: Text(books[i].title),
                 onTap: () => _openDescription(books[i].path),
                 subtitle: Text(books[i].path),
